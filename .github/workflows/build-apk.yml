@@ -27,10 +27,12 @@ jobs:
       - name: Install Cordova
         run: npm install -g cordova
 
-      - name: Generate Cordova App
+      - name: Create Cordova Project and Inject Files
         run: |
           cordova create airaApp com.aira.companion Aira
-          cp -r * airaApp/www/ 2>/dev/null || true
+          rm -rf airaApp/www/*
+          cp index.html airaApp/www/
+          cp config.xml airaApp/config.xml
           cd airaApp
           cordova platform add android
 
@@ -39,9 +41,9 @@ jobs:
           cd airaApp
           cordova build android --debug
 
-      - name: Upload APK
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Aira-App-Debug
+          name: Aira-APK-Fixed
           path: airaApp/platforms/android/app/build/outputs/apk/debug/app-debug.apk
           
