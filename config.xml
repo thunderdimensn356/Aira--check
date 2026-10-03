@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='utf-8'?>
+<widget id="com.aira.companion" version="1.0.0" xmlns="http://www.cordova.io/ns/1.0">
+    <name>Aira</name>
+    <description>Aira AI Companion App</description>
+    <author email="dev@aira.com">Aira Team</author>
+
+    <!-- Main HTML file entry point -->
+    <content src="index.html" />
+
+    <!-- Local files & WebView Load permissions -->
+    <access origin="*" />
+    <allow-intent href="http://*/*" />
+    <allow-intent href="https://*/*" />
+    <allow-navigation href="*" />
+
+    <preference name="KeepRunning" value="true" />
+    <preference name="ShowSplashScreenSpinner" value="false" />
+    <preference name="AllowInlineMediaPlayback" value="true" />
+</widget>
