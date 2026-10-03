@@ -252,36 +252,107 @@
       color: var(--text-secondary);
     }
 
-    /* Settings Modal matching Theme */
+    /* ========== ADVANCED SETTINGS MODAL ========== */
     .modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.7);
+      background: rgba(0, 0, 0, 0.75);
       backdrop-filter: blur(8px);
       z-index: 200;
       display: none;
       place-items: center;
-      padding: 20px;
+      padding: 16px;
     }
 
     .modal-overlay.active {
       display: grid;
     }
 
-    .modal-box {
+    .settings-card {
       width: 100%;
-      max-width: 380px;
+      max-width: 720px;
+      height: 480px;
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 20px;
-      padding: 24px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+      overflow: hidden;
     }
 
-    .modal-box h3 {
-      font-family: "Playfair Display", serif;
-      font-size: 22px;
+    .settings-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .settings-header h3 {
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: 20px;
+    }
+
+    .settings-body {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+    }
+
+    /* Settings Nav Tabs */
+    .settings-nav {
+      width: 180px;
+      background: var(--surface-2);
+      border-right: 1px solid var(--border);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .nav-tab {
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 13px;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .nav-tab:hover {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+    }
+
+    .nav-tab.active {
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    /* Settings Tab Content */
+    .settings-content {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .tab-panel {
+      display: none;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    .tab-panel h4 {
+      font-size: 15px;
       margin-bottom: 16px;
+      color: var(--text);
     }
 
     .input-group {
@@ -295,30 +366,33 @@
       margin-bottom: 6px;
     }
 
-    .input-group input {
+    .input-group input, .input-group textarea, .input-group select {
       width: 100%;
       background: var(--surface-2);
       border: 1px solid var(--border);
       border-radius: 10px;
       padding: 10px 14px;
       color: var(--text);
-      font-size: 14px;
+      font-size: 13px;
       outline: none;
+      font-family: inherit;
     }
 
-    .input-group input:focus {
+    .input-group input:focus, .input-group textarea:focus, .input-group select:focus {
       border-color: var(--accent);
     }
 
-    .modal-actions {
+    .settings-footer {
+      padding: 12px 20px;
+      border-top: 1px solid var(--border);
       display: flex;
       justify-content: flex-end;
       gap: 10px;
-      margin-top: 20px;
+      background: var(--surface);
     }
 
     .action-btn {
-      padding: 8px 16px;
+      padding: 8px 18px;
       border-radius: 10px;
       border: 1px solid var(--border);
       background: transparent;
@@ -602,11 +676,13 @@
     .send-btn svg { width: 18px; height: 18px; }
 
     .messages::-webkit-scrollbar,
-    .character-section::-webkit-scrollbar {
+    .character-section::-webkit-scrollbar,
+    .settings-content::-webkit-scrollbar {
       width: 4px;
     }
     .messages::-webkit-scrollbar-thumb,
-    .character-section::-webkit-scrollbar-thumb {
+    .character-section::-webkit-scrollbar-thumb,
+    .settings-content::-webkit-scrollbar-thumb {
       background: rgba(255, 255, 255, 0.1);
       border-radius: 10px;
     }
@@ -668,263 +744,77 @@
       </div>
     </aside>
 
-    <!-- SETTINGS MODAL -->
+    <!-- SETTINGS MODAL WITH TABS -->
     <div class="modal-overlay" id="settingsModal">
-      <div class="modal-box">
-        <h3>Aira Settings</h3>
-        <div class="input-group">
-          <label>Gemini API Key</label>
-          <input type="password" id="apiKeyInput" placeholder="Paste API Key here..." />
+      <div class="settings-card">
+        <div class="settings-header">
+          <h3>Settings</h3>
+          <button class="close-btn" id="closeSettingsBtn">✕</button>
         </div>
-        <div class="input-group">
-          <label>Backend API Endpoint</label>
-          <input type="text" id="endpointInput" value="http://localhost:5000/chat" />
-        </div>
-        <div class="modal-actions">
-          <button class="action-btn" id="closeSettingsBtn">Cancel</button>
-          <button class="action-btn primary" id="saveSettingsBtn">Save Key</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- CHAT -->
-    <main class="chat-panel">
-      <header class="chat-header">
-        <button class="menu-btn" id="openDrawer" title="Open profile">
-          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
-            <path d="M3 6h12M3 9h12M3 12h12"/>
-          </svg>
-        </button>
-
-        <div class="header-character">
-          <img class="header-avatar" id="headerAvatar" src="" alt="" />
-          <div class="header-info">
-            <div class="header-name">Aira</div>
-            <div class="header-status">
-              <span class="dot"></span>
-              Online
+        <div class="settings-body">
+          <div class="settings-nav">
+            <button class="nav-tab active" data-tab="general">General</button>
+            <button class="nav-tab" data-tab="notifications">Notifications</button>
+            <button class="nav-tab" data-tab="apps">Apps</button>
+            <button class="nav-tab" data-tab="uis">UI's</button>
+            <button class="nav-tab" data-tab="api">API</button>
+          </div>
+          <div class="settings-content">
+            <!-- GENERAL -->
+            <div class="tab-panel active" id="tab-general">
+              <h4>General Settings</h4>
+              <div class="input-group">
+                <label>Companion Name</label>
+                <input type="text" id="cfgName" value="Aira" />
+              </div>
+              <div class="input-group">
+                <label>Voice Synthesis</label>
+                <select id="cfgVoice">
+                  <option value="estelle">Estelle (Default)</option>
+                  <option value="swara">Swara Neural (Hindi)</option>
+                </select>
+              </div>
             </div>
-          </div>
-        </div>
 
-        <div class="header-actions">
-          <button class="icon-btn" id="clearChatBtn" title="Clear chat">
-            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 3l9 9M12 3l-9 9"/></svg>
-          </button>
-        </div>
-      </header>
-
-      <div class="messages" id="messages">
-        <div class="message ai">
-          <img class="message-avatar" id="msgAvatar" src="" alt="" />
-          <div class="bubble-wrap">
-            <div class="bubble">
-              Hey... I'm really glad you're here. How are you feeling today?
+            <!-- NOTIFICATIONS -->
+            <div class="tab-panel" id="tab-notifications">
+              <h4>Notifications</h4>
+              <div class="input-group">
+                <label>Background Notifications</label>
+                <select id="cfgNotify">
+                  <option value="enabled">Enabled</option>
+                  <option value="disabled">Disabled</option>
+                </select>
+              </div>
             </div>
-            <div class="bubble-meta">Just now</div>
-          </div>
-        </div>
-      </div>
 
-      <div class="input-area">
-        <div class="input-box">
-          <textarea id="input" rows="1" placeholder="Message Aira..."></textarea>
-          <button class="send-btn" id="sendBtn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M5 12h14M13 6l6 6-6 6"/>
-            </svg>
-          </button>
-        </div>
-      </div>
-    </main>
-  </div>
+            <!-- APPS -->
+            <div class="tab-panel" id="tab-apps">
+              <h4>Apps Integration</h4>
+              <div class="input-group">
+                <label>App Launcher Bridge</label>
+                <input type="text" value="Termux / Android Intent (AM_RUN Active)" readonly />
+              </div>
+            </div>
 
-  <script>
-    const DEFAULT_IMAGE = ""; // e.g. "images/aira.png"
+            <!-- UI's -->
+            <div class="tab-panel" id="tab-uis">
+              <h4>UI Theme & Styles</h4>
+              <div class="input-group">
+                <label>Theme Preset</label>
+                <select id="cfgTheme">
+                  <option value="dark">Dark Minimalist (Default)</option>
+                  <option value="violet">Violet Accent</option>
+                </select>
+              </div>
+            </div>
 
-    function setCharacterImage(src) {
-      const url = src || DEFAULT_IMAGE;
-      document.getElementById("characterImage").src = url;
-      document.getElementById("headerAvatar").src = url;
-      document.getElementById("msgAvatar").src = url;
+            <!-- API (PRIMARY) -->
+            <div class="tab-panel" id="tab-api">
+              <h4>API Configuration</h4>
+              <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">
+                Enter key-value pairs (matching your <code>api</code> file format, e.g., <code>1=key1</code>, <code>2=key2</code>, or single key)
+              </p>
+              <div class="input-group">
+     
 
-      document.querySelectorAll(".message.ai .message-avatar").forEach(img => {
-        img.src = url;
-      });
-    }
-
-    setCharacterImage(DEFAULT_IMAGE);
-
-    function setEmotion(emotion, imagePath) {
-      document.getElementById("emotionName").textContent = emotion;
-      document.getElementById("profileMood").textContent = emotion;
-      if (imagePath) setCharacterImage(imagePath);
-    }
-
-    // Storage Configs
-    let API_KEY = localStorage.getItem("AIRA_GEMINI_KEY") || "";
-    let BACKEND_URL = localStorage.getItem("AIRA_ENDPOINT") || "http://localhost:5000/chat";
-
-    function updateEngineState() {
-      const badge = document.getElementById("engineStatusVal");
-      if (API_KEY) {
-        badge.textContent = "Gemini API Active";
-        badge.style.color = "#34d399";
-      } else {
-        badge.textContent = "Hardcoded Core";
-        badge.style.color = "var(--text-secondary)";
-      }
-    }
-    updateEngineState();
-
-    // Drawer Toggles
-    const drawer = document.getElementById("drawer");
-    const overlay = document.getElementById("overlay");
-
-    function openDrawer() {
-      drawer.classList.add("open");
-      overlay.classList.add("visible");
-    }
-
-    function closeDrawer() {
-      drawer.classList.remove("open");
-      overlay.classList.remove("visible");
-    }
-
-    document.getElementById("openDrawer").addEventListener("click", openDrawer);
-    document.getElementById("closeDrawer").addEventListener("click", closeDrawer);
-    overlay.addEventListener("click", closeDrawer);
-
-    // Settings Modal
-    const settingsModal = document.getElementById("settingsModal");
-    document.getElementById("openSettingsBtn").onclick = () => {
-      document.getElementById("apiKeyInput").value = API_KEY;
-      document.getElementById("endpointInput").value = BACKEND_URL;
-      settingsModal.classList.add("active");
-    };
-    document.getElementById("closeSettingsBtn").onclick = () => settingsModal.classList.remove("active");
-    document.getElementById("saveSettingsBtn").onclick = () => {
-      API_KEY = document.getElementById("apiKeyInput").value.trim();
-      BACKEND_URL = document.getElementById("endpointInput").value.trim();
-      localStorage.setItem("AIRA_GEMINI_KEY", API_KEY);
-      localStorage.setItem("AIRA_ENDPOINT", BACKEND_URL);
-      updateEngineState();
-      settingsModal.classList.remove("active");
-      addMessage("System: API Key & Configuration saved successfully!", false);
-    };
-
-    // Chat Logic
-    const messagesEl = document.getElementById("messages");
-    const input = document.getElementById("input");
-    const sendBtn = document.getElementById("sendBtn");
-
-    input.addEventListener("input", () => {
-      input.style.height = "auto";
-      input.style.height = Math.min(input.scrollHeight, 120) + "px";
-    });
-
-    function addMessage(text, isUser = false) {
-      const time = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-      const div = document.createElement("div");
-      div.className = `message ${isUser ? "user" : "ai"}`;
-
-      if (isUser) {
-        div.innerHTML = `
-          <div class="bubble-wrap">
-            <div class="bubble">${text}</div>
-            <div class="bubble-meta">${time}</div>
-          </div>
-        `;
-      } else {
-        div.innerHTML = `
-          <img class="message-avatar" src="${document.getElementById("characterImage").src}" alt="" />
-          <div class="bubble-wrap">
-            <div class="bubble">${text}</div>
-            <div class="bubble-meta">${time}</div>
-          </div>
-        `;
-      }
-
-      messagesEl.appendChild(div);
-      messagesEl.scrollTop = messagesEl.scrollHeight;
-    }
-
-    function showTyping() {
-      const div = document.createElement("div");
-      div.className = "message ai";
-      div.id = "typing";
-      div.innerHTML = `
-        <img class="message-avatar" src="${document.getElementById("characterImage").src}" alt="" />
-        <div class="typing"><span></span><span></span><span></span></div>
-      `;
-      messagesEl.appendChild(div);
-      messagesEl.scrollTop = messagesEl.scrollHeight;
-    }
-
-    function removeTyping() {
-      const t = document.getElementById("typing");
-      if (t) t.remove();
-    }
-
-    // Hardcoded Logic (When API Key is not configured)
-    function processHardcodedAction(msg) {
-      const text = msg.toLowerCase().trim();
-      if (text.includes("settings") || text.includes("api") || text.includes("key")) {
-        settingsModal.classList.add("active");
-        return "Opening Settings panel... Please set your Gemini API key there!";
-      }
-      if (text.includes("hi") || text.includes("hello") || text.includes("hey")) {
-        return "Hey there! I am running on Offline Hardcoded Core right now. Set your API Key in Settings to enable full AI responses!";
-      }
-      if (text.includes("time")) {
-        return "Current time is: " + new Date().toLocaleTimeString();
-      }
-      return "Hardcoded Core active. Open Drawer > Settings to configure your Gemini API Key.";
-    }
-
-    async function sendMessage() {
-      const text = input.value.trim();
-      if (!text) return;
-
-      addMessage(text, true);
-      input.value = "";
-      input.style.height = "auto";
-
-      showTyping();
-
-      if (API_KEY) {
-        try {
-          const res = await fetch(BACKEND_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message: text, api_key: API_KEY })
-          });
-          const data = await res.json();
-          removeTyping();
-          addMessage(data.reply || "No response returned.", false);
-        } catch (err) {
-          removeTyping();
-          addMessage("⚠️ Backend offline. Fallback: " + processHardcodedAction(text), false);
-        }
-      } else {
-        setTimeout(() => {
-          removeTyping();
-          addMessage(processHardcodedAction(text), false);
-        }, 600);
-      }
-    }
-
-    sendBtn.addEventListener("click", sendMessage);
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
-      }
-    });
-
-    document.getElementById("clearChatBtn").onclick = () => {
-      messagesEl.innerHTML = "";
-    };
-  </script>
-</body>
-</html>
