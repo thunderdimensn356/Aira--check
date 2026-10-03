@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Aira Android APK
 
 on:
   push:
@@ -6,19 +6,19 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-android:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Set up Java JDK 17
+      - name: Setup Java JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
@@ -27,21 +27,21 @@ jobs:
       - name: Install Cordova
         run: npm install -g cordova
 
-      - name: Create Cordova Project & Add Android Platform
+      - name: Generate Cordova App
         run: |
-          cordova create myApp com.aira.ui AiraApp
-          cp -r * myApp/www/ 2>/dev/null || true
-          cd myApp
+          cordova create airaApp com.aira.companion Aira
+          cp -r * airaApp/www/ 2>/dev/null || true
+          cd airaApp
           cordova platform add android
 
       - name: Build Debug APK
         run: |
-          cd myApp
+          cd airaApp
           cordova build android --debug
 
-      - name: Upload APK Artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Aira-WebUI-APK
-          path: myApp/platforms/android/app/build/outputs/apk/debug/app-debug.apk
+          name: Aira-App-Debug
+          path: airaApp/platforms/android/app/build/outputs/apk/debug/app-debug.apk
           
