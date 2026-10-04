@@ -8,7 +8,7 @@
   <!-- Cordova Security Policy Fix -->
   <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: gap: content:;">
 
-  <!-- Cordova JS inclusion (App init ke liye zaroori hai) -->
+  <!-- Cordova JS inclusion -->
   <script src="cordova.js"></script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -140,19 +140,6 @@
       transition: opacity 0.3s ease;
     }
 
-    .character-frame::after {
-      content: "";
-      position: absolute;
-      inset: -2px;
-      border-radius: 50%;
-      padding: 2px;
-      background: linear-gradient(145deg, rgba(196, 181, 253, 0.45), transparent 55%, rgba(196, 181, 253, 0.12));
-      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-      -webkit-mask-composite: xor;
-      mask-composite: exclude;
-      pointer-events: none;
-    }
-
     .character-info {
       margin-top: 24px;
       text-align: center;
@@ -201,7 +188,6 @@
       color: var(--text);
     }
 
-    /* Profile & Settings at bottom */
     .profile-section {
       width: 100%;
       margin-top: auto;
@@ -307,7 +293,6 @@
       min-height: 0;
     }
 
-    /* Settings Nav Tabs */
     .settings-nav {
       width: 180px;
       background: var(--surface-2);
@@ -341,7 +326,6 @@
       font-weight: 500;
     }
 
-    /* Settings Tab Content */
     .settings-content {
       flex: 1;
       padding: 20px;
@@ -579,6 +563,7 @@
       font-size: 15px;
       line-height: 1.55;
       display: inline-block;
+      white-space: pre-wrap;
     }
 
     .message.ai .bubble {
@@ -730,7 +715,7 @@
         <div class="profile-section">
           <div class="profile-title">
             <span>Profile</span>
-            <button class="settings-trigger-btn" id="openSettingsBtn">⚙️ Settings</button>
+            <button class="settings-trigger-btn" id="openSettingsBtn">⚙️️ Settings</button>
           </div>
           <div class="profile-item">
             <span class="label">Name</span>
@@ -746,7 +731,7 @@
           </div>
           <div class="profile-item">
             <span class="label">Engine</span>
-            <span class="value" id="engineStatusVal">Hardcoded Core</span>
+            <span class="value" id="engineStatusVal">No Key Set</span>
           </div>
           <p class="profile-bio">
             A warm and thoughtful companion who listens deeply and responds with care.
@@ -824,293 +809,14 @@
             <div class="tab-panel" id="tab-api">
               <h4>API Configuration</h4>
               <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">
-                Enter key-value pairs (matching your <code>api</code> file format, e.g., <code>1=key1</code>, <code>2=key2</code>, or single key)
+                Gemini API Key paste karein (Example: <code>AIzaSy...</code> ya <code>1=AIzaSy...</code>):
               </p>
               <div class="input-group">
-                <label>API Keys / Config</label>
-                <textarea id="cfgApiKeys" rows="6" placeholder="1=your_api_key_here&#10;2=another_key&#10;or just paste a single key"></textarea>
-              </div>
-              <div class="input-group">
-                <label>API Endpoint (optional)</label>
-                <input type="text" id="cfgApiEndpoint" placeholder="https://api.example.com/v1/chat" />
+                <label>Gemini API Key</label>
+                <textarea id="cfgApiKeys" rows="6" placeholder="Paste your Gemini API key here..."></textarea>
               </div>
             </div>
           </div>
         </div>
         <div class="settings-footer">
-          <button class="action-btn" id="cancelSettingsBtn">Cancel</button>
-          <button class="action-btn primary" id="saveSettingsBtn">Save</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- CHAT PANEL -->
-    <div class="chat-panel">
-      <div class="chat-header">
-        <button class="menu-btn" id="openDrawer" title="Menu">
-          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <path d="M4 6h12M4 10h12M4 14h12"/>
-          </svg>
-        </button>
-
-        <div class="header-character">
-          <img class="header-avatar" id="headerAvatar" src="" alt="Aira" />
-          <div class="header-info">
-            <div class="header-name">Aira</div>
-            <div class="header-status">
-              <span class="dot"></span>
-              Online
-            </div>
-          </div>
-        </div>
-
-        <div class="header-actions">
-          <button class="icon-btn" id="clearChatBtn" title="Clear Chat">
-            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-              <path d="M4 6h12M6 6v10a1 1 0 001 1h6a1 1 0 001-1V6M8 6V4h4v2"/>
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      <div class="messages" id="messages">
-        <!-- Messages will be injected here -->
-      </div>
-
-      <div class="input-area">
-        <div class="input-box">
-          <textarea id="userInput" placeholder="Message Aira..." rows="1"></textarea>
-          <button class="send-btn" id="sendBtn" title="Send">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M22 2L11 13"/>
-              <path d="M22 2L15 22L11 13L2 9L22 2Z"/>
-            </svg>
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    // ========== DOM ELEMENTS ==========
-    const drawer = document.getElementById('drawer');
-    const overlay = document.getElementById('overlay');
-    const openDrawerBtn = document.getElementById('openDrawer');
-    const closeDrawerBtn = document.getElementById('closeDrawer');
-    const settingsModal = document.getElementById('settingsModal');
-    const openSettingsBtn = document.getElementById('openSettingsBtn');
-    const closeSettingsBtn = document.getElementById('closeSettingsBtn');
-    const cancelSettingsBtn = document.getElementById('cancelSettingsBtn');
-    const saveSettingsBtn = document.getElementById('saveSettingsBtn');
-    const messagesEl = document.getElementById('messages');
-    const userInput = document.getElementById('userInput');
-    const sendBtn = document.getElementById('sendBtn');
-    const clearChatBtn = document.getElementById('clearChatBtn');
-    const emotionName = document.getElementById('emotionName');
-    const profileMood = document.getElementById('profileMood');
-    const engineStatusVal = document.getElementById('engineStatusVal');
-
-    // ========== DRAWER ==========
-    function openDrawer() {
-      drawer.classList.add('open');
-      overlay.classList.add('visible');
-    }
-    function closeDrawer() {
-      drawer.classList.remove('open');
-      overlay.classList.remove('visible');
-    }
-    openDrawerBtn.addEventListener('click', openDrawer);
-    closeDrawerBtn.addEventListener('click', closeDrawer);
-    overlay.addEventListener('click', closeDrawer);
-
-    // ========== SETTINGS MODAL ==========
-    function openSettings() {
-      settingsModal.classList.add('active');
-      closeDrawer();
-    }
-    function closeSettings() {
-      settingsModal.classList.remove('active');
-    }
-    openSettingsBtn.addEventListener('click', openSettings);
-    closeSettingsBtn.addEventListener('click', closeSettings);
-    cancelSettingsBtn.addEventListener('click', closeSettings);
-
-    // Tab switching
-    document.querySelectorAll('.nav-tab').forEach(tab => {
-      tab.addEventListener('click', () => {
-        document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-        tab.classList.add('active');
-        document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
-      });
-    });
-
-    // Save settings (basic)
-    saveSettingsBtn.addEventListener('click', () => {
-      const name = document.getElementById('cfgName').value.trim() || 'Aira';
-      document.querySelectorAll('.character-name, .header-name').forEach(el => el.textContent = name);
-      localStorage.setItem('aira_cfg_name', name);
-      localStorage.setItem('aira_cfg_voice', document.getElementById('cfgVoice').value);
-      localStorage.setItem('aira_cfg_notify', document.getElementById('cfgNotify').value);
-      localStorage.setItem('aira_cfg_theme', document.getElementById('cfgTheme').value);
-      localStorage.setItem('aira_cfg_api', document.getElementById('cfgApiKeys').value);
-      localStorage.setItem('aira_cfg_endpoint', document.getElementById('cfgApiEndpoint').value);
-      closeSettings();
-    });
-
-    // Load saved settings
-    function loadSettings() {
-      const name = localStorage.getItem('aira_cfg_name');
-      if (name) {
-        document.getElementById('cfgName').value = name;
-        document.querySelectorAll('.character-name, .header-name').forEach(el => el.textContent = name);
-      }
-      const voice = localStorage.getItem('aira_cfg_voice');
-      if (voice) document.getElementById('cfgVoice').value = voice;
-      const notify = localStorage.getItem('aira_cfg_notify');
-      if (notify) document.getElementById('cfgNotify').value = notify;
-      const theme = localStorage.getItem('aira_cfg_theme');
-      if (theme) document.getElementById('cfgTheme').value = theme;
-      const api = localStorage.getItem('aira_cfg_api');
-      if (api) document.getElementById('cfgApiKeys').value = api;
-      const endpoint = localStorage.getItem('aira_cfg_endpoint');
-      if (endpoint) document.getElementById('cfgApiEndpoint').value = endpoint;
-    }
-
-    // ========== CHAT ==========
-    function addMessage(text, isUser = false) {
-      const msg = document.createElement('div');
-      msg.className = 'message ' + (isUser ? 'user' : 'ai');
-
-      if (!isUser) {
-        const avatar = document.createElement('img');
-        avatar.className = 'message-avatar';
-        avatar.src = '';
-        avatar.alt = 'Aira';
-        msg.appendChild(avatar);
-      }
-
-      const wrap = document.createElement('div');
-      wrap.className = 'bubble-wrap';
-
-      const bubble = document.createElement('div');
-      bubble.className = 'bubble';
-      bubble.textContent = text;
-      wrap.appendChild(bubble);
-
-      const meta = document.createElement('div');
-      meta.className = 'bubble-meta';
-      meta.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      wrap.appendChild(meta);
-
-      msg.appendChild(wrap);
-      messagesEl.appendChild(msg);
-      messagesEl.scrollTop = messagesEl.scrollHeight;
-    }
-
-    function showTyping() {
-      const typing = document.createElement('div');
-      typing.className = 'message ai';
-      typing.id = 'typingIndicator';
-      typing.innerHTML = `
-        <img class="message-avatar" src="" alt="Aira" />
-        <div class="bubble-wrap">
-          <div class="typing">
-            <span></span><span></span><span></span>
-          </div>
-        </div>
-      `;
-      messagesEl.appendChild(typing);
-      messagesEl.scrollTop = messagesEl.scrollHeight;
-    }
-
-    function hideTyping() {
-      const t = document.getElementById('typingIndicator');
-      if (t) t.remove();
-    }
-
-    // Simple hardcoded responses (can be replaced with real API later)
-    const responses = [
-      "I'm here with you. How are you feeling right now?",
-      "That sounds meaningful. Tell me more about it.",
-      "I understand. Take your time — I'm listening.",
-      "Thank you for sharing that with me.",
-      "You're not alone in this. I'm right here.",
-      "That's a beautiful way to put it.",
-      "Hmm, interesting. What do you think about that?",
-      "I appreciate you opening up to me."
-    ];
-
-    function getResponse(userText) {
-      // Basic emotion detection for demo
-      const lower = userText.toLowerCase();
-      let emotion = 'Calm';
-      if (lower.includes('happy') || lower.includes('good') || lower.includes('great')) emotion = 'Happy';
-      else if (lower.includes('sad') || lower.includes('down') || lower.includes('upset')) emotion = 'Caring';
-      else if (lower.includes('angry') || lower.includes('mad') || lower.includes('frustrated')) emotion = 'Supportive';
-      else if (lower.includes('love') || lower.includes('miss')) emotion = 'Warm';
-      emotionName.textContent = emotion;
-      profileMood.textContent = emotion;
-
-      return responses[Math.floor(Math.random() * responses.length)];
-    }
-
-    async function sendMessage() {
-      const text = userInput.value.trim();
-      if (!text) return;
-
-      addMessage(text, true);
-      userInput.value = '';
-      userInput.style.height = 'auto';
-      sendBtn.disabled = true;
-
-      showTyping();
-
-      // Simulate thinking delay
-      await new Promise(r => setTimeout(r, 800 + Math.random() * 1200));
-
-      hideTyping();
-      const reply = getResponse(text);
-      addMessage(reply, false);
-      sendBtn.disabled = false;
-      userInput.focus();
-    }
-
-    sendBtn.addEventListener('click', sendMessage);
-    userInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
-      }
-    });
-
-    // Auto-resize textarea
-    userInput.addEventListener('input', () => {
-      userInput.style.height = 'auto';
-      userInput.style.height = Math.min(userInput.scrollHeight, 120) + 'px';
-    });
-
-    // Clear chat
-    clearChatBtn.addEventListener('click', () => {
-      if (confirm('Clear all messages?')) {
-        messagesEl.innerHTML = '';
-        addMessage("Hi, I'm Aira. How can I support you today?", false);
-      }
-    });
-
-    // ========== INIT ==========
-    document.addEventListener('DOMContentLoaded', () => {
-      loadSettings();
-      addMessage("Hi, I'm Aira. How can I support you today?", false);
-
-      // Cordova ready (if available)
-      document.addEventListener('deviceready', () => {
-        console.log('Cordova is ready');
-        engineStatusVal.textContent = 'Cordova Ready';
-      }, false);
-    });
-  </script>
-</body>
-</html>
-
-
+          <button class="action-btn" id="c
