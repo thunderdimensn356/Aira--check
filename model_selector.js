@@ -1,84 +1,83 @@
 /**
  * model_selector.js
  * --------------------------------------------
- * Dynamically discovers working models from the provider.
- * Currently fully supports Gemini.
- * Structure ready for Grok / OpenAI / Anthropic later.
+ * Multi-provider model discovery
+ * Supports: Gemini, Grok (xAI), OpenAI
  */
 
 const MODEL_SELECTOR = (() => {
 
-  // Fallback list (used only when live fetch fails)
-  // Based on your real testing
-  const FALLBACK_MODELS = [
-    "gemini-3.5-flash-lite",
-    "gemini-3.6-flash",
-    "gemini-3.8-flash",
-    "gemini-3.5-flash",
-    "gemini-3.7-flash",
-    "gemini-flash-latest",
-    "gemini-flash-lite-latest",
-    "gemini-3.1-flash-lite",
-    "gemini-3-flash-preview",
-    "gemma-4-26b-a4b-it"
-  ];
+  // Fallback lists
+  const FALLBACK = {
+    gemini: [
+      "gemini-3.5-flash-lite",
+      "gemini-3.6-flash",
+      "gemini-3.8-flash",
+      "gemini-3.5-flash",
+      "gemini-3.7-flash",
+      "gemini-flash-latest",
+      "gemini-flash-lite-latest",
+      "gemini-3.1-flash-lite",
+      "gemini-3-flash-preview",
+      "gemma-4-26b-a4b-it"
+    ],
+    grok: [
+      "grok-2",
+      "grok-2-mini",
+      "grok-3",
+      "grok-3-mini"
+    ],
+    openai: [
+      "gpt-4o-mini",
+      "gpt-4o",
+      "gpt-4.1-mini",
+      "gpt-4.1",
+      "o4-mini"
+    ],
+    unknown: ["gemini-3.5-flash-lite"]
+  };
 
-  let cachedModels = null;
-  let lastFetch = 0;
-  const CACHE_TIME = 10 * 60 * 1000; // 10 minutes cache
+  let cache = {};
+  const CACHE_TIME = 10 * 60 * 1000; // 10 min
 
-  /**
-   * Detect provider from API key
-   */
   function detectProvider(apiKey) {
     if (!apiKey) return "unknown";
-    if (apiKey.startsWith("AIza")) return "gemini";
-    if (apiKey.startsWith("xai-") || apiKey.includes("x.ai")) return "grok";
-    if (apiKey.startsWith("sk-")) return "openai"; // rough
+    const key = apiKey.trim();
+
+    if (key.startsWith("AIza")) return "gemini";
+    if (key.startsWith("xai-") || key.toLowerCase().includes("x.ai")) return "grok";
+    if (key.startsWith("sk-")) return "openai";
+    if (key.startsWith("sk-ant-")) return "anthropic";
     return "unknown";
   }
 
-  /**
-   * Fetch live models from Gemini
-   */
+  // ---------- GEMINI ----------
   async function fetchGeminiModels(apiKey) {
     try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("Failed to fetch models");
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+      if (!res.ok) throw new Error("Gemini models fetch failed");
 
       const data = await res.json();
       const models = [];
 
-      if (data.models) {
-        for (const m of data.models) {
-          const name = (m.name || "").replace("models/", "");
-          const methods = m.supportedGenerationMethods || [];
+      for (const m of (data.models || [])) {
+        const name = (m.name || "").replace("models/", "");
+        const methods = m.supportedGenerationMethods || [];
 
-          // Only keep models that support generateContent
-          if (methods.includes("generateContent") && name.startsWith("gemini")) {
-            // Skip image / live / tts etc.
-            if (/image|live|tts|transcribe|embedding|veo|lyria|omni|computer-use|deep-research|antigravity/i.test(name)) {
-              continue;
-            }
-            models.push(name);
-          }
+        if (!methods.includes("generateContent")) continue;
+        if (!name.startsWith("gemini") && !name.startsWith("gemma")) continue;
+
+        // Skip non-chat models
+        if (/image|live|tts|transcribe|embedding|veo|lyria|omni|computer-use|deep-research|antigravity/i.test(name)) {
+          continue;
         }
+        models.push(name);
       }
 
-      if (models.length === 0) return FALLBACK_MODELS;
+      if (models.length === 0) return FALLBACK.gemini;
 
-      // Priority sort (best models first)
-      const priority = [
-        "gemini-3.5-flash-lite",
-        "gemini-3.6-flash",
-        "gemini-3.8-flash",
-        "gemini-3.5-flash",
-        "gemini-3.7-flash",
-        "gemini-flash-latest",
-        "gemini-flash-lite-latest"
-      ];
-
+      // Priority sort
+      const priority = FALLBACK.gemini;
       models.sort((a, b) => {
         const ai = priority.indexOf(a);
         const bi = priority.indexOf(b);
@@ -89,52 +88,93 @@ const MODEL_SELECTOR = (() => {
       });
 
       return models;
+    } catch (e) {
+      console.warn("[ModelSelector] Gemini fetch error:", e.message);
+      return FALLBACK.gemini;
+    }
+  }
 
-    } catch (err) {
-      console.warn("[ModelSelector] Live fetch failed:", err.message);
-      return FALLBACK_MODELS;
+  // ---------- GROK (xAI) ----------
+  async function fetchGrokModels(apiKey) {
+    try {
+      const res = await fetch("https://api.x.ai/v1/models", {
+        headers: { "Authorization": `Bearer ${apiKey}` }
+      });
+
+      if (!res.ok) throw new Error("Grok models fetch failed");
+
+      const data = await res.json();
+      const models = (data.data || [])
+        .map(m => m.id)
+        .filter(id => id && id.toLowerCase().includes("grok"));
+
+      return models.length > 0 ? models : FALLBACK.grok;
+    } catch (e) {
+      console.warn("[ModelSelector] Grok fetch error:", e.message);
+      return FALLBACK.grok;
+    }
+  }
+
+  // ---------- OPENAI ----------
+  async function fetchOpenAIModels(apiKey) {
+    try {
+      const res = await fetch("https://api.openai.com/v1/models", {
+        headers: { "Authorization": `Bearer ${apiKey}` }
+      });
+
+      if (!res.ok) throw new Error("OpenAI models fetch failed");
+
+      const data = await res.json();
+      const models = (data.data || [])
+        .map(m => m.id)
+        .filter(id => /gpt-4|o4|o3|gpt-3.5/i.test(id));
+
+      return models.length > 0 ? models : FALLBACK.openai;
+    } catch (e) {
+      console.warn("[ModelSelector] OpenAI fetch error:", e.message);
+      return FALLBACK.openai;
     }
   }
 
   /**
-   * Main function - get models for given API key
+   * Main function
    */
   async function getModels(apiKey) {
-    // Use cache if available
-    if (cachedModels && (Date.now() - lastFetch < CACHE_TIME)) {
-      return cachedModels;
+    const provider = detectProvider(apiKey);
+    const cacheKey = provider + "_" + (apiKey ? apiKey.slice(-6) : "none");
+
+    // Cache check
+    if (cache[cacheKey] && (Date.now() - cache[cacheKey].time < CACHE_TIME)) {
+      return cache[cacheKey].models;
     }
 
-    const provider = detectProvider(apiKey);
-
-    let models = FALLBACK_MODELS;
+    let models = FALLBACK[provider] || FALLBACK.unknown;
 
     if (provider === "gemini") {
       models = await fetchGeminiModels(apiKey);
-    } else {
-      // Future: add Grok / OpenAI / Anthropic here
-      console.warn("[ModelSelector] Provider not fully supported yet:", provider);
+    } else if (provider === "grok") {
+      models = await fetchGrokModels(apiKey);
+    } else if (provider === "openai") {
+      models = await fetchOpenAIModels(apiKey);
     }
 
-    cachedModels = models;
-    lastFetch = Date.now();
+    cache[cacheKey] = { models, time: Date.now() };
     return models;
   }
 
-  function getDefault() {
-    return FALLBACK_MODELS[0];
+  function getDefault(provider = "gemini") {
+    return (FALLBACK[provider] || FALLBACK.unknown)[0];
   }
 
   function clearCache() {
-    cachedModels = null;
-    lastFetch = 0;
+    cache = {};
   }
 
   return {
     getModels,
     getDefault,
-    clearCache,
     detectProvider,
-    FALLBACK_MODELS
+    clearCache,
+    FALLBACK
   };
 })();
