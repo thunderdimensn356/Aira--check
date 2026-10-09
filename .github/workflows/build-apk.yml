@@ -53,20 +53,16 @@ jobs:
             echo "Copied aira_accessibility_service.xml"
           fi
           
-          # Ensure strings.xml exists
-          STRINGS_FILE="platforms/android/app/src/main/res/values/strings.xml"
-          if [ ! -f "$STRINGS_FILE" ]; then
-            echo '<?xml version="1.0" encoding="utf-8"?>' > "$STRINGS_FILE"
-            echo '<resources>' >> "$STRINGS_FILE"
-            echo '    <string name="app_name">Aira</string>' >> "$STRINGS_FILE"
-            echo '</resources>' >> "$STRINGS_FILE"
-            echo "Created strings.xml"
-          fi
-          
-          # Add accessibility description string if missing
-          if ! grep -q "aira_accessibility_description" "$STRINGS_FILE"; then
-            sed -i 's|</resources>|    <string name="aira_accessibility_description">Aira needs accessibility permission to help control the device.</string>\n</resources>|' "$STRINGS_FILE"
-            echo "Added accessibility description string"
+          # Create ONLY our custom strings file (no app_name to avoid duplicate)
+          AIRA_STRINGS="platforms/android/app/src/main/res/values/aira_strings.xml"
+          if [ ! -f "$AIRA_STRINGS" ]; then
+            cat > "$AIRA_STRINGS" << 'STREOF'
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="aira_accessibility_description">Aira needs accessibility permission to help control the device.</string>
+</resources>
+STREOF
+            echo "Created aira_strings.xml"
           fi
           
           # Add service to AndroidManifest if missing
