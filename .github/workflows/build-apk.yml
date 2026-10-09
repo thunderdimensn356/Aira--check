@@ -27,23 +27,52 @@ jobs:
       - name: Install Cordova
         run: npm install -g cordova
 
-      - name: Setup Cordova & Copy All Files
+      - name: Setup Cordova Project
         run: |
-          cordova create airaApp com.aira.companion Aira
-          rm -rf airaApp/www/*
-          cp -r ./* airaApp/www/ 2>/dev/null || true
-          cp config.xml airaApp/config.xml
-          cd airaApp
-          cordova platform add android
+          cd cordova-app
+          # Ensure platform is added
+          cordova platform add android || true
+
+      - name: Copy Accessibility Service Files
+        run: |
+          cd cordova-app
+          
+          # Create directories
+          mkdir -p platforms/android/app/src/main/java/com/aira/app
+          mkdir -p platforms/android/app/src/main/res/xml
+          mkdir -p platforms/android/app/src/main/res/values
+          
+          # Copy Java service
+          if [ -f native/java/AiraAccessibilityService.java ]; then
+            cp native/java/AiraAccessibilityService.java platforms/android/app/src/main/java/com/aira/app/
+            echo "Copied AiraAccessibilityService.java"
+          fi
+          
+          # Copy XML config
+          if [ -f native/xml/aira_accessibility_service.xml ]; then
+            cp native/xml/aira_accessibility_service.xml platforms/android/app/src/main/res/xml/
+            echo "Copied aira_accessibility_service.xml"
+          fi
+          
+          # Add string resource if not present
+          if ! grep -q "aira_accessibility_description" platforms/android/app/src/main/res/values/strings.xml 2>/dev/null; then
+            sed -i 's|</resources>|    <string name="aira_accessibility_description">Aira needs accessibility permission to help control the device.</string>\n</resources>|' platforms/android/app/src/main/res/values/strings.xml
+            echo "Added accessibility description string"
+          fi
+          
+          # Add service to AndroidManifest if not present
+          if ! grep -q "AiraAccessibilityService" platforms/android/app/src/main/AndroidManifest.xml; then
+            sed -i 's|</application>|        <service android:name=".AiraAccessibilityService" android:exported="false" android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"><intent-filter><action android:name="android.accessibilityservice.AccessibilityService" /></intent-filter><meta-data android:name="android.accessibilityservice" android:resource="@xml/aira_accessibility_service" /></service>\n    </application>|' platforms/android/app/src/main/AndroidManifest.xml
+            echo "Added Accessibility Service to AndroidManifest"
+          fi
 
       - name: Build Debug APK
         run: |
-          cd airaApp
+          cd cordova-app
           cordova build android --debug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Aira-APK-Working
-          path: airaApp/platforms/android/app/build/outputs/apk/debug/app-debug.apk
-          
+          name: Aira-APK-With-Accessibility
+          path: cordova-app/platforms/android/app/build/outputs/apk/debug/app-debug.apk
