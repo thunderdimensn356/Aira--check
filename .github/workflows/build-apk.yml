@@ -35,37 +35,29 @@ jobs:
       - name: Copy Accessibility Service Files
         run: |
           cd cordova-app
-          
-          # Create required directories
           mkdir -p platforms/android/app/src/main/java/com/aira/app
           mkdir -p platforms/android/app/src/main/res/xml
           mkdir -p platforms/android/app/src/main/res/values
-          
-          # Copy Java service
+
           if [ -f native/java/AiraAccessibilityService.java ]; then
             cp native/java/AiraAccessibilityService.java platforms/android/app/src/main/java/com/aira/app/
             echo "Copied AiraAccessibilityService.java"
           fi
-          
-          # Copy XML config
+
           if [ -f native/xml/aira_accessibility_service.xml ]; then
             cp native/xml/aira_accessibility_service.xml platforms/android/app/src/main/res/xml/
             echo "Copied aira_accessibility_service.xml"
           fi
-          
-          # Create ONLY our custom strings file (no app_name to avoid duplicate)
+
           AIRA_STRINGS="platforms/android/app/src/main/res/values/aira_strings.xml"
           if [ ! -f "$AIRA_STRINGS" ]; then
-            cat > "$AIRA_STRINGS" << 'STREOF'
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="aira_accessibility_description">Aira needs accessibility permission to help control the device.</string>
-</resources>
-STREOF
+            echo '<?xml version="1.0" encoding="utf-8"?>' > "$AIRA_STRINGS"
+            echo '<resources>' >> "$AIRA_STRINGS"
+            echo '    <string name="aira_accessibility_description">Aira needs accessibility permission to help control the device.</string>' >> "$AIRA_STRINGS"
+            echo '</resources>' >> "$AIRA_STRINGS"
             echo "Created aira_strings.xml"
           fi
-          
-          # Add service to AndroidManifest if missing
+
           MANIFEST="platforms/android/app/src/main/AndroidManifest.xml"
           if [ -f "$MANIFEST" ] && ! grep -q "AiraAccessibilityService" "$MANIFEST"; then
             sed -i 's|</application>|        <service android:name=".AiraAccessibilityService" android:exported="false" android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"><intent-filter><action android:name="android.accessibilityservice.AccessibilityService" /></intent-filter><meta-data android:name="android.accessibilityservice" android:resource="@xml/aira_accessibility_service" /></service>\n    </application>|' "$MANIFEST"
