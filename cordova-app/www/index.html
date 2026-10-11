@@ -1042,6 +1042,61 @@ Always be supportive, practical, and conversational.
       if (!text) return;
 
       addMessage(text, true);
+
+      // ===== DEVICE CONTROL COMMANDS =====
+      const cmd = text.toLowerCase().trim();
+
+      if (cmd === "open chrome" || cmd === "chrome kholo") {
+        userInput.value = '';
+        sendBtn.disabled = true;
+        const ok = await AiraAccess.openApp("com.android.chrome");
+        addMessage(ok ? "Chrome open kar diya." : "Chrome nahi khul paya. Accessibility On hai na?", false);
+        sendBtn.disabled = false;
+        userInput.focus();
+        return;
+      }
+
+      if (cmd === "go home" || cmd === "home") {
+        userInput.value = '';
+        sendBtn.disabled = true;
+        const ok = await AiraAccess.goHome();
+        addMessage(ok ? "Home pe le aaya." : "Home nahi ja paya. Accessibility check karo.", false);
+        sendBtn.disabled = false;
+        userInput.focus();
+        return;
+      }
+
+      if (cmd === "go back" || cmd === "back") {
+        userInput.value = '';
+        sendBtn.disabled = true;
+        const ok = await AiraAccess.goBack();
+        addMessage(ok ? "Back kar diya." : "Back nahi ho paya.", false);
+        sendBtn.disabled = false;
+        userInput.focus();
+        return;
+      }
+
+      if (cmd === "open notifications" || cmd === "notifications") {
+        userInput.value = '';
+        sendBtn.disabled = true;
+        const ok = await AiraAccess.openNotifications();
+        addMessage(ok ? "Notifications open kiye." : "Notifications nahi khul paye.", false);
+        sendBtn.disabled = false;
+        userInput.focus();
+        return;
+      }
+
+      if (cmd === "open recents" || cmd === "recents") {
+        userInput.value = '';
+        sendBtn.disabled = true;
+        const ok = await AiraAccess.openRecents();
+        addMessage(ok ? "Recents open kiye." : "Recents nahi khul paye.", false);
+        sendBtn.disabled = false;
+        userInput.focus();
+        return;
+      }
+      // ===== END DEVICE CONTROL =====
+
       userInput.value = '';
       userInput.style.height = 'auto';
       sendBtn.disabled = true;
