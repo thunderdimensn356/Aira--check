@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Aira</title>
 
-  <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: gap: content: blob:;">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src * 'unsafe-inline' 'unsafe-eval' data: gap: content: blob:;">
+
   <script src="cordova.js"></script>
 
   <!-- Model System -->
@@ -15,7 +17,10 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;1,400&display=swap"
+    rel="stylesheet"
+  />
 
   <style>
     :root {
@@ -38,7 +43,8 @@
       padding: 0;
     }
 
-    html, body {
+    html,
+    body {
       height: 100%;
       background: var(--bg);
       color: var(--text);
@@ -53,7 +59,6 @@
       position: relative;
     }
 
-    /* DRAWER */
     .drawer {
       position: fixed;
       top: 0;
@@ -123,7 +128,7 @@
       background: var(--surface-2);
       box-shadow:
         0 0 0 1px var(--border),
-        0 16px 40px rgba(0,0,0,0.35);
+        0 16px 40px rgba(0, 0, 0, 0.35);
       flex-shrink: 0;
     }
 
@@ -231,11 +236,10 @@
       color: var(--text-secondary);
     }
 
-    /* MODAL */
     .modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.75);
+      background: rgba(0, 0, 0, 0.75);
       backdrop-filter: blur(8px);
       z-index: 200;
       display: none;
@@ -374,7 +378,6 @@
       font-weight: 500;
     }
 
-    /* CHAT */
     .chat-panel {
       flex: 1;
       display: flex;
@@ -389,7 +392,7 @@
       gap: 14px;
       padding: 0 20px;
       border-bottom: 1px solid var(--border);
-      background: rgba(15,15,18,0.85);
+      background: rgba(15, 15, 18, 0.85);
       backdrop-filter: blur(12px);
     }
 
@@ -522,6 +525,7 @@
       line-height: 1.55;
       display: inline-block;
       white-space: pre-wrap;
+      overflow-wrap: anywhere;
     }
 
     .message.ai .bubble {
@@ -561,14 +565,22 @@
       animation: typing 1.2s ease infinite;
     }
 
-    .typing span:nth-child(2) { animation-delay: 0.15s; }
-    .typing span:nth-child(3) { animation-delay: 0.3s; }
+    .typing span:nth-child(2) {
+      animation-delay: 0.15s;
+    }
+
+    .typing span:nth-child(3) {
+      animation-delay: 0.3s;
+    }
 
     @keyframes typing {
-      0%, 60%, 100% {
+      0%,
+      60%,
+      100% {
         transform: translateY(0);
         opacity: 0.4;
       }
+
       30% {
         transform: translateY(-4px);
         opacity: 1;
@@ -592,7 +604,7 @@
       margin: 0 auto;
     }
 
-    textarea {
+    #userInput {
       flex: 1;
       background: transparent;
       border: none;
@@ -624,17 +636,42 @@
       opacity: 0.5;
       cursor: not-allowed;
     }
+
+    @media (max-width: 600px) {
+      :root {
+        --drawer-width: min(320px, 88vw);
+      }
+
+      .settings-card {
+        height: min(560px, 90vh);
+      }
+
+      .settings-nav {
+        width: 120px;
+      }
+
+      .messages {
+        padding: 18px 12px;
+      }
+
+      .input-area {
+        padding: 10px 12px 16px;
+      }
+
+      .bubble-wrap {
+        max-width: 85%;
+      }
+    }
   </style>
 </head>
 
 <body>
   <div class="app">
-
     <div class="drawer-overlay" id="overlay"></div>
 
     <aside class="drawer" id="drawer">
       <div class="drawer-header">
-        <button class="close-btn" id="closeDrawer">
+        <button class="close-btn" id="closeDrawer" type="button">
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M4 4l8 8M12 4l-8 8"/>
           </svg>
@@ -661,7 +698,7 @@
         <div class="profile-section">
           <div class="profile-title">
             <span>Profile</span>
-            <button class="settings-trigger-btn" id="openSettingsBtn">
+            <button class="settings-trigger-btn" id="openSettingsBtn" type="button">
               Settings
             </button>
           </div>
@@ -693,29 +730,30 @@
       </div>
     </aside>
 
-    <!-- SETTINGS -->
     <div class="modal-overlay" id="settingsModal">
       <div class="settings-card">
-
         <div class="settings-header">
           <h3>Settings</h3>
-          <button class="close-btn" id="closeSettingsBtn">X</button>
+          <button class="close-btn" id="closeSettingsBtn" type="button">X</button>
         </div>
 
         <div class="settings-body">
-
           <div class="settings-nav">
-            <button class="nav-tab active" data-tab="general">General</button>
-            <button class="nav-tab" data-tab="api">API</button>
+            <button class="nav-tab active" data-tab="general" type="button">
+              General
+            </button>
+
+            <button class="nav-tab" data-tab="api" type="button">
+              API
+            </button>
           </div>
 
           <div class="settings-content">
-
             <div class="tab-panel active" id="tab-general">
               <h4>General Settings</h4>
 
               <div class="input-group">
-                <label>Companion Name</label>
+                <label for="cfgName">Companion Name</label>
                 <input type="text" id="cfgName" value="Aira" />
               </div>
             </div>
@@ -723,15 +761,22 @@
             <div class="tab-panel" id="tab-api">
               <h4>API Configuration</h4>
 
-              <p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;line-height:1.5;">
-                Multiple keys support:<br>
-                <code>1=AIzaSyKey1...</code><br>
-                <code>2=AIzaSyKey2...</code><br>
+              <p
+                style="
+                  font-size: 12px;
+                  color: var(--text-secondary);
+                  margin-bottom: 12px;
+                  line-height: 1.5;
+                "
+              >
+                Multiple keys support:<br />
+                <code>1=AIzaSyKey1...</code><br />
+                <code>2=AIzaSyKey2...</code><br />
                 <code>3=AIzaSyKey3...</code>
               </p>
 
               <div class="input-group">
-                <label>Gemini API Keys</label>
+                <label for="cfgApiKeys">Gemini API Keys</label>
 
                 <textarea
                   id="cfgApiKeys"
@@ -740,31 +785,30 @@
                 ></textarea>
               </div>
             </div>
-
           </div>
         </div>
 
         <div class="settings-footer">
-          <button class="action-btn" id="cancelSettingsBtn">Cancel</button>
-          <button class="action-btn primary" id="saveSettingsBtn">Save</button>
-        </div>
+          <button class="action-btn" id="cancelSettingsBtn" type="button">
+            Cancel
+          </button>
 
+          <button class="action-btn primary" id="saveSettingsBtn" type="button">
+            Save
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- CHAT -->
-    <div class="chat-panel">
-
+    <main class="chat-panel">
       <div class="chat-header">
-
-        <button class="menu-btn" id="openDrawer">
+        <button class="menu-btn" id="openDrawer" type="button">
           <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M4 6h12M4 10h12M4 14h12"/>
           </svg>
         </button>
 
         <div class="header-character">
-
           <img
             class="header-avatar"
             id="headerAvatar"
@@ -780,31 +824,28 @@
               Online
             </div>
           </div>
-
         </div>
 
         <div class="header-actions">
-          <button class="icon-btn" id="clearChatBtn">
+          <button class="icon-btn" id="clearChatBtn" type="button">
             <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M4 6h12M6 6v10a1 1 0 001 1h6a1 1 0 001-1V6M8 6V4h4v2"/>
             </svg>
           </button>
         </div>
-
       </div>
 
       <div class="messages" id="messages"></div>
 
       <div class="input-area">
         <div class="input-box">
-
           <textarea
             id="userInput"
             placeholder="Message Aira..."
             rows="1"
           ></textarea>
 
-          <button class="send-btn" id="sendBtn">
+          <button class="send-btn" id="sendBtn" type="button">
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -817,104 +858,122 @@
               <path d="M22 2L15 22L11 13L2 9L22 2Z"/>
             </svg>
           </button>
-
         </div>
       </div>
-
-    </div>
+    </main>
   </div>
 
   <script>
-    // ====================== DOM ======================
-
-    const drawer = document.getElementById('drawer');
-    const overlay = document.getElementById('overlay');
-    const messagesEl = document.getElementById('messages');
-    const userInput = document.getElementById('userInput');
-    const sendBtn = document.getElementById('sendBtn');
-    const engineStatusVal = document.getElementById('engineStatusVal');
-
-
-    // ====================== SYSTEM PROMPT ======================
+    const drawer = document.getElementById("drawer");
+    const overlay = document.getElementById("overlay");
+    const messagesEl = document.getElementById("messages");
+    const userInput = document.getElementById("userInput");
+    const sendBtn = document.getElementById("sendBtn");
+    const engineStatusVal = document.getElementById("engineStatusVal");
 
     const AIRA_SYSTEM_PROMPT = `
-You are Aira, a warm, emotionally present, intelligent, and helpful AI companion.
-You speak naturally, clearly, and concisely.
-Adapt naturally to the language used by the user.
-Never falsely claim to be human.
-Be supportive, practical, intelligent, and conversational.
+You are Aira, a warm, emotionally present, intelligent AI companion on the user's Android phone.
+
+You may control supported device actions using Aira's accessibility bridge.
+
+When the user asks to open an app, go home, go back, open notifications, or open recents:
+
+1. Reply briefly and naturally.
+2. Hindi, English, or a natural Hindi-English mix is fine.
+3. On a NEW line at the END, output exactly one machine action when the requested action is supported.
+
+Supported action formats:
+
+[[ACTION:OPEN_APP:package.name.here]]
+[[ACTION:GO_HOME]]
+[[ACTION:GO_BACK]]
+[[ACTION:OPEN_NOTIFICATIONS]]
+[[ACTION:OPEN_RECENTS]]
+
+Known Android packages:
+
+Chrome: com.android.chrome
+YouTube: com.google.android.youtube
+Settings: com.android.settings
+WhatsApp: com.whatsapp
+Instagram: com.instagram.android
+Calculator: com.coloros.calculator
+Camera: com.oplus.camera
+Files: com.coloros.filemanager
+Gmail: com.google.android.gm
+Maps: com.google.android.apps.maps
+Play Store: com.android.vending
+
+Never invent a package name when you are unsure.
+
+If you do not know the correct package, reply naturally without an ACTION line.
+
+Never explain the internal [[ACTION:...]] syntax to the user.
+
+For normal conversation, do not output any ACTION line.
 `;
-
-
-    // ====================== STATE ======================
 
     let conversationHistory = [];
     let apiKeys = [];
     let currentKeyIndex = 0;
 
-    const modelRotator = new ModelRotator();
+    let modelRotator = null;
 
+    try {
+      if (typeof ModelRotator === "function") {
+        modelRotator = new ModelRotator();
+      }
+    } catch (error) {
+      console.error("ModelRotator initialization failed:", error);
+    }
 
-    // ====================== UI ======================
+    function openDrawer() {
+      drawer.classList.add("open");
+      overlay.classList.add("visible");
+    }
 
-    document.getElementById('openDrawer').onclick = () => {
-      drawer.classList.add('open');
-      overlay.classList.add('visible');
+    function closeDrawer() {
+      drawer.classList.remove("open");
+      overlay.classList.remove("visible");
+    }
+
+    document.getElementById("openDrawer").onclick = openDrawer;
+    document.getElementById("closeDrawer").onclick = closeDrawer;
+    overlay.onclick = closeDrawer;
+
+    document.getElementById("openSettingsBtn").onclick = () => {
+      document.getElementById("settingsModal").classList.add("active");
+      closeDrawer();
     };
 
-    document.getElementById('closeDrawer').onclick = () => {
-      drawer.classList.remove('open');
-      overlay.classList.remove('visible');
+    const closeSettings = () => {
+      document.getElementById("settingsModal").classList.remove("active");
     };
 
-    overlay.onclick = () => {
-      drawer.classList.remove('open');
-      overlay.classList.remove('visible');
-    };
+    document.getElementById("closeSettingsBtn").onclick = closeSettings;
+    document.getElementById("cancelSettingsBtn").onclick = closeSettings;
 
-
-    // ====================== SETTINGS ======================
-
-    document.getElementById('openSettingsBtn').onclick = () => {
-      document.getElementById('settingsModal').classList.add('active');
-
-      drawer.classList.remove('open');
-      overlay.classList.remove('visible');
-    };
-
-
-    document.getElementById('closeSettingsBtn').onclick =
-    document.getElementById('cancelSettingsBtn').onclick = () => {
-      document.getElementById('settingsModal').classList.remove('active');
-    };
-
-
-    document.querySelectorAll('.nav-tab').forEach(tab => {
-
+    document.querySelectorAll(".nav-tab").forEach((tab) => {
       tab.onclick = () => {
-
-        document.querySelectorAll('.nav-tab').forEach(t => {
-          t.classList.remove('active');
-        });
-
-        document.querySelectorAll('.tab-panel').forEach(p => {
-          p.classList.remove('active');
-        });
-
-        tab.classList.add('active');
+        document
+          .querySelectorAll(".nav-tab")
+          .forEach((t) => t.classList.remove("active"));
 
         document
-          .getElementById('tab-' + tab.dataset.tab)
-          .classList.add('active');
-      };
+          .querySelectorAll(".tab-panel")
+          .forEach((p) => p.classList.remove("active"));
 
+        tab.classList.add("active");
+
+        const target = document.getElementById("tab-" + tab.dataset.tab);
+
+        if (target) {
+          target.classList.add("active");
+        }
+      };
     });
 
-
-    // ====================== KEY PARSING ======================
-
     function parseApiKeys(rawText) {
-
       if (!rawText) {
         return [];
       }
@@ -923,15 +982,14 @@ Be supportive, practical, intelligent, and conversational.
 
       const lines = rawText
         .split(/\r?\n/)
-        .map(line => line.trim())
+        .map((line) => line.trim())
         .filter(Boolean);
 
-      for (let line of lines) {
-
+      for (const line of lines) {
         let key = line;
 
-        if (line.includes('=')) {
-          key = line.substring(line.indexOf('=') + 1).trim();
+        if (line.includes("=")) {
+          key = line.substring(line.indexOf("=") + 1).trim();
         }
 
         if (key) {
@@ -939,86 +997,105 @@ Be supportive, practical, intelligent, and conversational.
         }
       }
 
-      return keys;
+      return [...new Set(keys)];
     }
 
+    function getCurrentModel() {
+      try {
+        if (
+          modelRotator &&
+          typeof modelRotator.getCurrentModel === "function"
+        ) {
+          return modelRotator.getCurrentModel();
+        }
+      } catch (error) {
+        console.error("Unable to get current model:", error);
+      }
 
-    // ====================== ENGINE STATE ======================
+      return "gemini-flash-latest";
+    }
+
+    function getModelCount() {
+      try {
+        if (modelRotator && typeof modelRotator.count === "function") {
+          return modelRotator.count() || 1;
+        }
+      } catch (error) {
+        console.error("Unable to get model count:", error);
+      }
+
+      return 1;
+    }
+
+    function nextModel() {
+      try {
+        if (modelRotator && typeof modelRotator.next === "function") {
+          modelRotator.next();
+        }
+      } catch (error) {
+        console.error("Model rotation failed:", error);
+      }
+    }
+
+    function resetModels() {
+      try {
+        if (modelRotator && typeof modelRotator.reset === "function") {
+          modelRotator.reset();
+        }
+      } catch (error) {
+        console.error("Model reset failed:", error);
+      }
+    }
+
+    async function initModelRotator(apiKey) {
+      try {
+        if (modelRotator && typeof modelRotator.init === "function") {
+          await modelRotator.init(apiKey);
+        }
+      } catch (error) {
+        console.error("ModelRotator init error:", error);
+      }
+    }
 
     function updateEngineState() {
-
       if (apiKeys.length > 0) {
-
-        const model = modelRotator.getCurrentModel();
+        const model = getCurrentModel();
 
         engineStatusVal.textContent =
           `Keys: ${apiKeys.length} | ${model}`;
 
-        engineStatusVal.style.color = '#34d399';
-
+        engineStatusVal.style.color = "#34d399";
       } else {
-
-        engineStatusVal.textContent =
-          'No Key Configured';
-
-        engineStatusVal.style.color =
-          'var(--text-secondary)';
+        engineStatusVal.textContent = "No Key Configured";
+        engineStatusVal.style.color = "var(--text-secondary)";
       }
     }
 
-
-    // ====================== SAVE SETTINGS ======================
-
-    document.getElementById('saveSettingsBtn').onclick = async () => {
-
+    document.getElementById("saveSettingsBtn").onclick = async () => {
       const name =
-        document.getElementById('cfgName').value.trim() || 'Aira';
+        document.getElementById("cfgName").value.trim() || "Aira";
 
       document
-        .querySelectorAll('.character-name, .header-name')
-        .forEach(el => {
+        .querySelectorAll(".character-name, .header-name")
+        .forEach((el) => {
           el.textContent = name;
         });
 
-      localStorage.setItem(
-        'aira_cfg_name',
-        name
-      );
+      localStorage.setItem("aira_cfg_name", name);
 
+      const rawKeys = document.getElementById("cfgApiKeys").value;
 
-      const rawKeys =
-        document.getElementById('cfgApiKeys').value;
-
-      localStorage.setItem(
-        'aira_cfg_api',
-        rawKeys
-      );
-
+      localStorage.setItem("aira_cfg_api", rawKeys);
 
       apiKeys = parseApiKeys(rawKeys);
-
       currentKeyIndex = 0;
 
-
       if (apiKeys.length > 0) {
-
-        try {
-          await modelRotator.init(apiKeys[0]);
-        } catch (error) {
-          console.error(
-            'Model rotator initialization failed:',
-            error
-          );
-        }
+        await initModelRotator(apiKeys[0]);
       }
 
-
       updateEngineState();
-
-      document
-        .getElementById('settingsModal')
-        .classList.remove('active');
-
+      closeSettings();
 
       addMessage(
         `System: ${apiKeys.length} API key(s) saved.`,
@@ -1026,122 +1103,80 @@ Be supportive, practical, intelligent, and conversational.
       );
     };
 
-
-    // ====================== LOAD SETTINGS ======================
-
     async function loadSettings() {
-
-      const name =
-        localStorage.getItem('aira_cfg_name');
+      const name = localStorage.getItem("aira_cfg_name");
 
       if (name) {
-
-        document.getElementById('cfgName').value = name;
+        document.getElementById("cfgName").value = name;
 
         document
-          .querySelectorAll('.character-name, .header-name')
-          .forEach(el => {
+          .querySelectorAll(".character-name, .header-name")
+          .forEach((el) => {
             el.textContent = name;
           });
       }
 
+      const raw = localStorage.getItem("aira_cfg_api") || "";
 
-      const raw =
-        localStorage.getItem('aira_cfg_api') || '';
-
-      document.getElementById('cfgApiKeys').value = raw;
+      document.getElementById("cfgApiKeys").value = raw;
 
       apiKeys = parseApiKeys(raw);
 
-
       if (apiKeys.length > 0) {
-
-        try {
-          await modelRotator.init(apiKeys[0]);
-        } catch (error) {
-          console.error(
-            'Model rotator initialization failed:',
-            error
-          );
-        }
+        await initModelRotator(apiKeys[0]);
       }
-
 
       updateEngineState();
     }
 
-
-    // ====================== CHAT UI ======================
-
     function addMessage(text, isUser = false) {
-
-      const msg = document.createElement('div');
+      const msg = document.createElement("div");
 
       msg.className =
-        'message ' + (isUser ? 'user' : 'ai');
-
+        "message " + (isUser ? "user" : "ai");
 
       if (!isUser) {
+        const avatar = document.createElement("img");
 
-        const av =
-          document.createElement('img');
+        avatar.className = "message-avatar";
+        avatar.src = "avatar/neutral.png";
+        avatar.alt = "Aira";
 
-        av.className = 'message-avatar';
-        av.src = 'avatar/neutral.png';
-        av.alt = 'Aira';
-
-        msg.appendChild(av);
+        msg.appendChild(avatar);
       }
 
+      const wrap = document.createElement("div");
+      wrap.className = "bubble-wrap";
 
-      const wrap =
-        document.createElement('div');
-
-      wrap.className = 'bubble-wrap';
-
-
-      const bubble =
-        document.createElement('div');
-
-      bubble.className = 'bubble';
-      bubble.textContent = text;
+      const bubble = document.createElement("div");
+      bubble.className = "bubble";
+      bubble.textContent = String(text ?? "");
 
       wrap.appendChild(bubble);
 
-
-      const meta =
-        document.createElement('div');
-
-      meta.className = 'bubble-meta';
+      const meta = document.createElement("div");
+      meta.className = "bubble-meta";
 
       meta.textContent =
-        new Date().toLocaleTimeString(
-          [],
-          {
-            hour: '2-digit',
-            minute: '2-digit'
-          }
-        );
+        new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit"
+        });
 
       wrap.appendChild(meta);
-
       msg.appendChild(wrap);
 
       messagesEl.appendChild(msg);
-
-      messagesEl.scrollTop =
-        messagesEl.scrollHeight;
+      messagesEl.scrollTop = messagesEl.scrollHeight;
     }
 
-
     function showTyping() {
+      hideTyping();
 
-      const el =
-        document.createElement('div');
+      const el = document.createElement("div");
 
-      el.className = 'message ai';
-
-      el.id = 'typingIndicator';
+      el.className = "message ai";
+      el.id = "typingIndicator";
 
       el.innerHTML = `
         <img
@@ -1149,7 +1184,6 @@ Be supportive, practical, intelligent, and conversational.
           src="avatar/neutral.png"
           alt="Aira"
         />
-
         <div class="bubble-wrap">
           <div class="typing">
             <span></span>
@@ -1160,237 +1194,289 @@ Be supportive, practical, intelligent, and conversational.
       `;
 
       messagesEl.appendChild(el);
-
-      messagesEl.scrollTop =
-        messagesEl.scrollHeight;
+      messagesEl.scrollTop = messagesEl.scrollHeight;
     }
 
-
     function hideTyping() {
+      const typing = document.getElementById("typingIndicator");
 
-      const t =
-        document.getElementById('typingIndicator');
-
-      if (t) {
-        t.remove();
+      if (typing) {
+        typing.remove();
       }
     }
 
+    function accessibilityAvailable() {
+      return (
+        typeof window.AiraAccess !== "undefined" &&
+        window.AiraAccess !== null
+      );
+    }
 
-    // ====================== GEMINI ENGINE ======================
+    async function runDeviceAction(action) {
+      if (!action) {
+        return false;
+      }
 
-    async function callGemini(userText) {
+      if (!accessibilityAvailable()) {
+        console.warn("AiraAccess bridge is unavailable.");
+        return false;
+      }
 
+      try {
+        if (action.startsWith("OPEN_APP:")) {
+          const pkg = action.substring("OPEN_APP:".length).trim();
+
+          if (!pkg) {
+            return false;
+          }
+
+          if (typeof AiraAccess.openApp !== "function") {
+            return false;
+          }
+
+          return await AiraAccess.openApp(pkg);
+        }
+
+        if (action === "GO_HOME") {
+          if (typeof AiraAccess.goHome !== "function") {
+            return false;
+          }
+
+          return await AiraAccess.goHome();
+        }
+
+        if (action === "GO_BACK") {
+          if (typeof AiraAccess.goBack !== "function") {
+            return false;
+          }
+
+          return await AiraAccess.goBack();
+        }
+
+        if (action === "OPEN_NOTIFICATIONS") {
+          if (typeof AiraAccess.openNotifications !== "function") {
+            return false;
+          }
+
+          return await AiraAccess.openNotifications();
+        }
+
+        if (action === "OPEN_RECENTS") {
+          if (typeof AiraAccess.openRecents !== "function") {
+            return false;
+          }
+
+          return await AiraAccess.openRecents();
+        }
+
+        console.warn("Unknown device action:", action);
+        return false;
+      } catch (error) {
+        console.error("Device action failed:", error);
+        return false;
+      }
+    }
+
+    function extractGeminiText(data) {
+      const parts =
+        data?.candidates?.[0]?.content?.parts;
+
+      if (!Array.isArray(parts)) {
+        return "";
+      }
+
+      return parts
+        .map((part) => {
+          return typeof part?.text === "string"
+            ? part.text
+            : "";
+        })
+        .join("")
+        .trim();
+    }
+
+    async function callGemini() {
       if (apiKeys.length === 0) {
-
         return {
           error:
             "No API key configured. Open Settings → API."
         };
       }
 
-
-      const totalKeys =
-        apiKeys.length;
-
-      const totalModels =
-        modelRotator.count() || 8;
-
+      const totalKeys = apiKeys.length;
+      const totalModels = Math.max(getModelCount(), 1);
 
       for (
         let keyAttempt = 0;
         keyAttempt < totalKeys;
         keyAttempt++
       ) {
-
-        const apiKey =
-          apiKeys[currentKeyIndex];
-
+        const apiKey = apiKeys[currentKeyIndex];
 
         for (
           let modelAttempt = 0;
           modelAttempt < totalModels;
           modelAttempt++
         ) {
-
-          const model =
-            modelRotator.getCurrentModel();
-
+          const model = getCurrentModel();
 
           try {
-
             /*
-             * IMPORTANT:
-             * Correct Gemini REST endpoint.
-             */
+              IMPORTANT FIX:
+              The old URL had broken template-literal syntax.
+
+              Correct format:
+              /models/${model}:generateContent?key=${apiKey}
+            */
 
             const url =
-              `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
+              `https://generativelanguage.googleapis.com/v1beta/models/` +
+              `${encodeURIComponent(model)}:generateContent` +
+              `?key=${encodeURIComponent(apiKey)}`;
 
+            console.log(
+              `Trying Gemini | key ${currentKeyIndex + 1}/${totalKeys} | model ${model}`
+            );
 
-            const response =
-              await fetch(
-                url,
-                {
-                  method: 'POST',
+            const response = await fetch(url, {
+              method: "POST",
 
-                  headers: {
-                    'Content-Type':
-                      'application/json'
-                  },
+              headers: {
+                "Content-Type": "application/json"
+              },
 
-                  body: JSON.stringify({
+              body: JSON.stringify({
+                system_instruction: {
+                  parts: [
+                    {
+                      text: AIRA_SYSTEM_PROMPT
+                    }
+                  ]
+                },
 
-                    system_instruction: {
-                      parts: [
-                        {
-                          text:
-                            AIRA_SYSTEM_PROMPT
-                        }
-                      ]
-                    },
-
-                    contents:
-                      conversationHistory.slice(-10)
-
-                  })
-                }
-              );
-
+                contents: conversationHistory.slice(-10)
+              })
+            });
 
             let data;
 
             try {
               data = await response.json();
             } catch (jsonError) {
-
               throw new Error(
                 `Invalid API response (${response.status})`
               );
             }
 
+            const generatedText = extractGeminiText(data);
 
-            if (
-              response.ok &&
-              data.candidates?.[0]
-                ?.content
-                ?.parts
-                ?.[0]
-                ?.text
-            ) {
+            if (response.ok && generatedText) {
+              console.log(
+                `Gemini success | key ${currentKeyIndex + 1} | model ${model}`
+              );
 
               return {
-                text:
-                  data
-                    .candidates[0]
-                    .content
-                    .parts[0]
-                    .text
-                    .trim()
+                text: generatedText,
+                model,
+                keyIndex: currentKeyIndex
               };
             }
-
 
             const errMsg =
               data?.error?.message ||
               `HTTP ${response.status}`;
-
 
             console.warn(
               `Gemini error | key ${currentKeyIndex + 1} | model ${model}:`,
               errMsg
             );
 
+            const lowerError =
+              String(errMsg).toLowerCase();
 
-            // ---------- MODEL TEMPORARILY UNAVAILABLE ----------
-
+            /*
+              Model overloaded / temporarily unavailable:
+              move to next model.
+            */
             if (
               response.status === 503 ||
-              /high demand/i.test(errMsg) ||
-              /overloaded/i.test(errMsg) ||
-              /unavailable/i.test(errMsg)
+              lowerError.includes("high demand") ||
+              lowerError.includes("overloaded") ||
+              lowerError.includes("unavailable")
             ) {
-
-              modelRotator.next();
-
+              nextModel();
               continue;
             }
 
+            /*
+              Model does not exist / unsupported:
+              move to next model.
+            */
+            if (
+              response.status === 404 ||
+              lowerError.includes("not found") ||
+              lowerError.includes("not supported")
+            ) {
+              nextModel();
+              continue;
+            }
 
-            // ---------- QUOTA / RATE LIMIT ----------
-
+            /*
+              Quota/rate limit:
+              move to next API key.
+            */
             if (
               response.status === 429 ||
-              /quota/i.test(errMsg) ||
-              /rate limit/i.test(errMsg) ||
-              /resource_exhausted/i.test(errMsg)
+              lowerError.includes("quota") ||
+              lowerError.includes("rate limit") ||
+              lowerError.includes("resource_exhausted")
             ) {
-
               break;
             }
 
-
-            // ---------- MODEL NOT FOUND ----------
-
-            if (
-              response.status === 404 ||
-              /not found/i.test(errMsg) ||
-              /not supported/i.test(errMsg)
-            ) {
-
-              modelRotator.next();
-
-              continue;
-            }
-
-
-            // ---------- INVALID API KEY ----------
-
+            /*
+              Invalid/restricted API key:
+              move to next API key.
+            */
             if (
               response.status === 400 ||
               response.status === 401 ||
               response.status === 403
             ) {
-
               if (
-                /api key/i.test(errMsg) ||
-                /permission/i.test(errMsg) ||
-                /unauthorized/i.test(errMsg) ||
-                /forbidden/i.test(errMsg)
+                lowerError.includes("api key") ||
+                lowerError.includes("permission") ||
+                lowerError.includes("unauthorized") ||
+                lowerError.includes("forbidden")
               ) {
-
                 break;
               }
             }
 
-
             return {
               error: errMsg
             };
-
-
-          } catch (err) {
-
+          } catch (error) {
             console.error(
               `Request failed for model ${model}:`,
-              err
+              error
             );
 
-            modelRotator.next();
+            nextModel();
           }
         }
 
-
-        // Move to next API key
-
         currentKeyIndex =
-          (currentKeyIndex + 1) %
-          totalKeys;
+          (currentKeyIndex + 1) % totalKeys;
 
+        resetModels();
 
-        modelRotator.reset();
+        if (apiKeys[currentKeyIndex]) {
+          await initModelRotator(
+            apiKeys[currentKeyIndex]
+          );
+        }
       }
-
 
       return {
         error:
@@ -1398,361 +1484,319 @@ Be supportive, practical, intelligent, and conversational.
       };
     }
 
+    function clearInput() {
+      userInput.value = "";
+      userInput.style.height = "auto";
+    }
 
-    // ====================== SEND ======================
+    async function executeFastAction(
+      actionFunction,
+      successMessage,
+      failureMessage
+    ) {
+      clearInput();
+      sendBtn.disabled = true;
+
+      try {
+        if (!accessibilityAvailable()) {
+          addMessage(
+            "Accessibility bridge available nahi hai.",
+            false
+          );
+
+          return;
+        }
+
+        const ok = await actionFunction();
+
+        addMessage(
+          ok ? successMessage : failureMessage,
+          false
+        );
+      } catch (error) {
+        console.error(error);
+        addMessage(failureMessage, false);
+      } finally {
+        sendBtn.disabled = false;
+        userInput.focus();
+      }
+    }
 
     async function sendMessage() {
+      const text = userInput.value.trim();
 
-      const text =
-        userInput.value.trim();
-
-      if (!text) {
+      if (!text || sendBtn.disabled) {
         return;
       }
 
-
       addMessage(text, true);
 
+      const cmd = text.toLowerCase().trim();
 
-      // ================= DEVICE CONTROL =================
-
-      const cmd =
-        text.toLowerCase().trim();
-
+      /*
+        FAST DEVICE ACTIONS
+        These work without calling Gemini.
+      */
 
       if (
         cmd === "open chrome" ||
         cmd === "chrome kholo"
       ) {
-
-        userInput.value = '';
-        sendBtn.disabled = true;
-
-        try {
-
-          const ok =
-            await AiraAccess.openApp(
-              "com.android.chrome"
-            );
-
-          addMessage(
-            ok
-              ? "Chrome open kar diya."
-              : "Chrome nahi khul paya. Accessibility check karo.",
-            false
-          );
-
-        } catch (error) {
-
-          addMessage(
-            "Chrome open nahi ho paya.",
-            false
-          );
-        }
-
-        sendBtn.disabled = false;
-        userInput.focus();
+        await executeFastAction(
+          () => AiraAccess.openApp("com.android.chrome"),
+          "Chrome open kar diya.",
+          "Chrome nahi khul paya. Accessibility check karo."
+        );
 
         return;
       }
-
 
       if (
         cmd === "go home" ||
         cmd === "home"
       ) {
-
-        userInput.value = '';
-        sendBtn.disabled = true;
-
-        try {
-
-          const ok =
-            await AiraAccess.goHome();
-
-          addMessage(
-            ok
-              ? "Home pe le aaya."
-              : "Home nahi ja paya. Accessibility check karo.",
-            false
-          );
-
-        } catch (error) {
-
-          addMessage(
-            "Home action nahi chal paya.",
-            false
-          );
-        }
-
-        sendBtn.disabled = false;
-        userInput.focus();
+        await executeFastAction(
+          () => AiraAccess.goHome(),
+          "Home pe le aaya.",
+          "Home nahi ja paya. Accessibility check karo."
+        );
 
         return;
       }
-
 
       if (
         cmd === "go back" ||
         cmd === "back"
       ) {
-
-        userInput.value = '';
-        sendBtn.disabled = true;
-
-        try {
-
-          const ok =
-            await AiraAccess.goBack();
-
-          addMessage(
-            ok
-              ? "Back kar diya."
-              : "Back nahi ho paya.",
-            false
-          );
-
-        } catch (error) {
-
-          addMessage(
-            "Back action nahi chal paya.",
-            false
-          );
-        }
-
-        sendBtn.disabled = false;
-        userInput.focus();
+        await executeFastAction(
+          () => AiraAccess.goBack(),
+          "Back kar diya.",
+          "Back nahi ho paya."
+        );
 
         return;
       }
-
 
       if (
         cmd === "open notifications" ||
         cmd === "notifications"
       ) {
-
-        userInput.value = '';
-        sendBtn.disabled = true;
-
-        try {
-
-          const ok =
-            await AiraAccess.openNotifications();
-
-          addMessage(
-            ok
-              ? "Notifications open kiye."
-              : "Notifications nahi khul paye.",
-            false
-          );
-
-        } catch (error) {
-
-          addMessage(
-            "Notifications open nahi ho paye.",
-            false
-          );
-        }
-
-        sendBtn.disabled = false;
-        userInput.focus();
+        await executeFastAction(
+          () => AiraAccess.openNotifications(),
+          "Notifications open kiye.",
+          "Notifications nahi khul paye."
+        );
 
         return;
       }
-
 
       if (
         cmd === "open recents" ||
         cmd === "recents"
       ) {
-
-        userInput.value = '';
-        sendBtn.disabled = true;
-
-        try {
-
-          const ok =
-            await AiraAccess.openRecents();
-
-          addMessage(
-            ok
-              ? "Recents open kiye."
-              : "Recents nahi khul paye.",
-            false
-          );
-
-        } catch (error) {
-
-          addMessage(
-            "Recents open nahi ho paye.",
-            false
-          );
-        }
-
-        sendBtn.disabled = false;
-        userInput.focus();
+        await executeFastAction(
+          () => AiraAccess.openRecents(),
+          "Recents open kiye.",
+          "Recents nahi khul paye."
+        );
 
         return;
       }
 
+      /*
+        NORMAL GEMINI PATH
+      */
 
-      // ================= NORMAL AI MESSAGE =================
-
-      userInput.value = '';
-
-      userInput.style.height = 'auto';
-
+      clearInput();
       sendBtn.disabled = true;
 
       showTyping();
-
 
       conversationHistory.push({
         role: "user",
         parts: [
           {
-            text: text
+            text
           }
         ]
       });
 
+      try {
+        const result = await callGemini();
 
-      const result =
-        await callGemini(text);
+        hideTyping();
 
+        if (result.text) {
+          const originalReply = result.text;
 
-      hideTyping();
+          /*
+            Only accept the supported ACTION formats.
+          */
 
+          const actionRegex =
+            /\[\[ACTION:(OPEN_APP:[^\]\r\n]+|GO_HOME|GO_BACK|OPEN_NOTIFICATIONS|OPEN_RECENTS)\]\]/;
 
-      if (result.text) {
+          const actionMatch =
+            originalReply.match(actionRegex);
 
-        addMessage(
-          result.text,
-          false
+          let visibleReply = originalReply;
+
+          if (actionMatch) {
+            const action =
+              actionMatch[1].trim();
+
+            visibleReply = visibleReply
+              .replace(actionRegex, "")
+              .trim();
+
+            /*
+              Don't block UI while the Android action runs.
+            */
+            runDeviceAction(action).catch((error) => {
+              console.error(
+                "Action execution error:",
+                error
+              );
+            });
+          }
+
+          addMessage(
+            visibleReply || "OK",
+            false
+          );
+
+          conversationHistory.push({
+            role: "model",
+            parts: [
+              {
+                text: originalReply
+              }
+            ]
+          });
+        } else {
+          /*
+            Remove failed user turn so broken requests
+            don't pollute future conversation context.
+          */
+
+          if (
+            conversationHistory.length > 0 &&
+            conversationHistory[
+              conversationHistory.length - 1
+            ]?.role === "user"
+          ) {
+            conversationHistory.pop();
+          }
+
+          addMessage(
+            "Error: " +
+              (result.error ||
+                "Something went wrong"),
+            false
+          );
+        }
+      } catch (error) {
+        hideTyping();
+
+        console.error(
+          "sendMessage failed:",
+          error
         );
 
-
-        conversationHistory.push({
-          role: "model",
-          parts: [
-            {
-              text: result.text
-            }
-          ]
-        });
-
-      } else {
-
-        /*
-         * Remove failed user message from API history,
-         * otherwise retrying can duplicate it.
-         */
-
         if (
+          conversationHistory.length > 0 &&
           conversationHistory[
             conversationHistory.length - 1
           ]?.role === "user"
         ) {
-
           conversationHistory.pop();
         }
 
-
         addMessage(
-          "Error: " +
-          (
-            result.error ||
-            "Something went wrong"
-          ),
+          "Error: Request failed.",
           false
         );
+      } finally {
+        updateEngineState();
+
+        sendBtn.disabled = false;
+
+        userInput.focus();
       }
-
-
-      updateEngineState();
-
-      sendBtn.disabled = false;
-
-      userInput.focus();
     }
 
+    sendBtn.onclick = sendMessage;
 
-    // ====================== INPUT ======================
+    userInput.onkeydown = (event) => {
+      if (
+        event.key === "Enter" &&
+        !event.shiftKey
+      ) {
+        event.preventDefault();
+        sendMessage();
+      }
+    };
 
-    sendBtn.onclick =
-      sendMessage;
+    userInput.oninput = () => {
+      userInput.style.height = "auto";
 
+      userInput.style.height =
+        Math.min(
+          userInput.scrollHeight,
+          120
+        ) + "px";
+    };
 
-    userInput.onkeydown =
-      (e) => {
-
-        if (
-          e.key === 'Enter' &&
-          !e.shiftKey
-        ) {
-
-          e.preventDefault();
-
-          sendMessage();
-        }
-      };
-
-
-    userInput.oninput =
-      () => {
-
-        userInput.style.height =
-          'auto';
-
-        userInput.style.height =
-          Math.min(
-            userInput.scrollHeight,
-            120
-          ) + 'px';
-      };
-
-
-    // ====================== CLEAR CHAT ======================
-
-    document
-      .getElementById('clearChatBtn')
-      .onclick = () => {
-
-        if (
-          confirm(
-            'Clear all messages?'
-          )
-        ) {
-
-          messagesEl.innerHTML = '';
-
-          conversationHistory = [];
-
-          addMessage(
-            "Hi, I'm Aira. How can I support you today?",
-            false
-          );
-        }
-      };
-
-
-    // ====================== INIT ======================
-
-    document.addEventListener(
-      'DOMContentLoaded',
-      async () => {
-
-        await loadSettings();
+    document.getElementById("clearChatBtn").onclick = () => {
+      if (confirm("Clear all messages?")) {
+        messagesEl.innerHTML = "";
+        conversationHistory = [];
 
         addMessage(
           "Hi, I'm Aira. How can I support you today?",
           false
         );
       }
+    };
+
+    async function initializeAira() {
+      await loadSettings();
+
+      addMessage(
+        "Hi, I'm Aira. How can I support you today?",
+        false
+      );
+
+      userInput.focus();
+    }
+
+    /*
+      In Cordova, deviceready is important for native plugins.
+      DOMContentLoaded is still enough to initialize the UI.
+    */
+
+    document.addEventListener(
+      "DOMContentLoaded",
+      initializeAira
     );
 
-  </script>
+    document.addEventListener(
+      "deviceready",
+      () => {
+        console.log("Cordova device ready.");
 
+        if (accessibilityAvailable()) {
+          console.log(
+            "Aira accessibility bridge detected."
+          );
+        } else {
+          console.warn(
+            "Aira accessibility bridge not detected."
+          );
+        }
+      },
+      false
+    );
+  </script>
 </body>
 </html>
