@@ -648,10 +648,12 @@
 
         <div class="character-info">
           <h1 class="character-name">Aira</h1>
+
           <div class="character-status">
             <span class="status-dot"></span>
             Online
           </div>
+
           <div class="emotion-label">Current Feeling</div>
           <div class="emotion-name" id="emotionName">Calm</div>
         </div>
@@ -660,7 +662,7 @@
           <div class="profile-title">
             <span>Profile</span>
             <button class="settings-trigger-btn" id="openSettingsBtn">
-              ⚙️ Settings
+              Settings
             </button>
           </div>
 
@@ -668,14 +670,17 @@
             <span class="label">Name</span>
             <span class="value">Aira</span>
           </div>
+
           <div class="profile-item">
             <span class="label">Persona</span>
             <span class="value">Companion</span>
           </div>
+
           <div class="profile-item">
             <span class="label">Mood</span>
             <span class="value" id="profileMood">Calm</span>
           </div>
+
           <div class="profile-item">
             <span class="label">Engine</span>
             <span class="value" id="engineStatusVal">No Key Set</span>
@@ -691,20 +696,24 @@
     <!-- SETTINGS -->
     <div class="modal-overlay" id="settingsModal">
       <div class="settings-card">
+
         <div class="settings-header">
           <h3>Settings</h3>
-          <button class="close-btn" id="closeSettingsBtn">✕</button>
+          <button class="close-btn" id="closeSettingsBtn">X</button>
         </div>
 
         <div class="settings-body">
+
           <div class="settings-nav">
             <button class="nav-tab active" data-tab="general">General</button>
             <button class="nav-tab" data-tab="api">API</button>
           </div>
 
           <div class="settings-content">
+
             <div class="tab-panel active" id="tab-general">
               <h4>General Settings</h4>
+
               <div class="input-group">
                 <label>Companion Name</label>
                 <input type="text" id="cfgName" value="Aira" />
@@ -713,14 +722,17 @@
 
             <div class="tab-panel" id="tab-api">
               <h4>API Configuration</h4>
+
               <p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;line-height:1.5;">
-                Multiple keys support (recommended):<br>
+                Multiple keys support:<br>
                 <code>1=AIzaSyKey1...</code><br>
                 <code>2=AIzaSyKey2...</code><br>
                 <code>3=AIzaSyKey3...</code>
               </p>
+
               <div class="input-group">
                 <label>Gemini API Keys</label>
+
                 <textarea
                   id="cfgApiKeys"
                   rows="8"
@@ -728,6 +740,7 @@
                 ></textarea>
               </div>
             </div>
+
           </div>
         </div>
 
@@ -735,12 +748,15 @@
           <button class="action-btn" id="cancelSettingsBtn">Cancel</button>
           <button class="action-btn primary" id="saveSettingsBtn">Save</button>
         </div>
+
       </div>
     </div>
 
     <!-- CHAT -->
     <div class="chat-panel">
+
       <div class="chat-header">
+
         <button class="menu-btn" id="openDrawer">
           <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M4 6h12M4 10h12M4 14h12"/>
@@ -748,14 +764,23 @@
         </button>
 
         <div class="header-character">
-          <img class="header-avatar" id="headerAvatar" src="avatar/neutral.png" alt="Aira" />
+
+          <img
+            class="header-avatar"
+            id="headerAvatar"
+            src="avatar/neutral.png"
+            alt="Aira"
+          />
+
           <div>
             <div class="header-name">Aira</div>
+
             <div class="header-status">
               <span class="dot"></span>
               Online
             </div>
           </div>
+
         </div>
 
         <div class="header-actions">
@@ -765,26 +790,43 @@
             </svg>
           </button>
         </div>
+
       </div>
 
       <div class="messages" id="messages"></div>
 
       <div class="input-area">
         <div class="input-box">
-          <textarea id="userInput" placeholder="Message Aira..." rows="1"></textarea>
+
+          <textarea
+            id="userInput"
+            placeholder="Message Aira..."
+            rows="1"
+          ></textarea>
+
           <button class="send-btn" id="sendBtn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="18" height="18">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              width="18"
+              height="18"
+            >
               <path d="M22 2L11 13"/>
               <path d="M22 2L15 22L11 13L2 9L22 2Z"/>
             </svg>
           </button>
+
         </div>
       </div>
+
     </div>
   </div>
 
   <script>
     // ====================== DOM ======================
+
     const drawer = document.getElementById('drawer');
     const overlay = document.getElementById('overlay');
     const messagesEl = document.getElementById('messages');
@@ -792,21 +834,29 @@
     const sendBtn = document.getElementById('sendBtn');
     const engineStatusVal = document.getElementById('engineStatusVal');
 
+
     // ====================== SYSTEM PROMPT ======================
+
     const AIRA_SYSTEM_PROMPT = `
 You are Aira, a warm, emotionally present, intelligent, and helpful AI companion.
-You speak naturally, clearly, and concisely in English.
-Never refer to yourself as a bot or program.
-Always be supportive, practical, and conversational.
+You speak naturally, clearly, and concisely.
+Adapt naturally to the language used by the user.
+Never falsely claim to be human.
+Be supportive, practical, intelligent, and conversational.
 `;
 
+
     // ====================== STATE ======================
+
     let conversationHistory = [];
     let apiKeys = [];
     let currentKeyIndex = 0;
+
     const modelRotator = new ModelRotator();
 
+
     // ====================== UI ======================
+
     document.getElementById('openDrawer').onclick = () => {
       drawer.classList.add('open');
       overlay.classList.add('visible');
@@ -822,338 +872,886 @@ Always be supportive, practical, and conversational.
       overlay.classList.remove('visible');
     };
 
+
+    // ====================== SETTINGS ======================
+
     document.getElementById('openSettingsBtn').onclick = () => {
       document.getElementById('settingsModal').classList.add('active');
+
       drawer.classList.remove('open');
       overlay.classList.remove('visible');
     };
+
 
     document.getElementById('closeSettingsBtn').onclick =
     document.getElementById('cancelSettingsBtn').onclick = () => {
       document.getElementById('settingsModal').classList.remove('active');
     };
 
+
     document.querySelectorAll('.nav-tab').forEach(tab => {
+
       tab.onclick = () => {
-        document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+
+        document.querySelectorAll('.nav-tab').forEach(t => {
+          t.classList.remove('active');
+        });
+
+        document.querySelectorAll('.tab-panel').forEach(p => {
+          p.classList.remove('active');
+        });
+
         tab.classList.add('active');
-        document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+
+        document
+          .getElementById('tab-' + tab.dataset.tab)
+          .classList.add('active');
       };
+
     });
 
+
     // ====================== KEY PARSING ======================
+
     function parseApiKeys(rawText) {
-      if (!rawText) return [];
+
+      if (!rawText) {
+        return [];
+      }
+
       const keys = [];
-      const lines = rawText.trim().split('\n');
+
+      const lines = rawText
+        .split(/\r?\n/)
+        .map(line => line.trim())
+        .filter(Boolean);
+
       for (let line of lines) {
-        line = line.trim();
-        if (!line) continue;
+
+        let key = line;
+
         if (line.includes('=')) {
-          const key = line.split('=').slice(1).join('=').trim();
-          if (key) keys.push(key);
-        } else {
-          keys.push(line);
+          key = line.substring(line.indexOf('=') + 1).trim();
+        }
+
+        if (key) {
+          keys.push(key);
         }
       }
+
       return keys;
     }
 
+
     // ====================== ENGINE STATE ======================
+
     function updateEngineState() {
+
       if (apiKeys.length > 0) {
+
         const model = modelRotator.getCurrentModel();
-        engineStatusVal.textContent = `Keys: ${apiKeys.length} | ${model}`;
+
+        engineStatusVal.textContent =
+          `Keys: ${apiKeys.length} | ${model}`;
+
         engineStatusVal.style.color = '#34d399';
+
       } else {
-        engineStatusVal.textContent = 'No Key Configured';
-        engineStatusVal.style.color = 'var(--text-secondary)';
+
+        engineStatusVal.textContent =
+          'No Key Configured';
+
+        engineStatusVal.style.color =
+          'var(--text-secondary)';
       }
     }
 
-    // ====================== SAVE / LOAD ======================
-    document.getElementById('saveSettingsBtn').onclick = async () => {
-      const name = document.getElementById('cfgName').value.trim() || 'Aira';
-      document.querySelectorAll('.character-name, .header-name').forEach(el => el.textContent = name);
-      localStorage.setItem('aira_cfg_name', name);
 
-      const rawKeys = document.getElementById('cfgApiKeys').value;
-      localStorage.setItem('aira_cfg_api', rawKeys);
+    // ====================== SAVE SETTINGS ======================
+
+    document.getElementById('saveSettingsBtn').onclick = async () => {
+
+      const name =
+        document.getElementById('cfgName').value.trim() || 'Aira';
+
+      document
+        .querySelectorAll('.character-name, .header-name')
+        .forEach(el => {
+          el.textContent = name;
+        });
+
+      localStorage.setItem(
+        'aira_cfg_name',
+        name
+      );
+
+
+      const rawKeys =
+        document.getElementById('cfgApiKeys').value;
+
+      localStorage.setItem(
+        'aira_cfg_api',
+        rawKeys
+      );
+
+
       apiKeys = parseApiKeys(rawKeys);
+
       currentKeyIndex = 0;
 
+
       if (apiKeys.length > 0) {
-        await modelRotator.init(apiKeys[0]);
+
+        try {
+          await modelRotator.init(apiKeys[0]);
+        } catch (error) {
+          console.error(
+            'Model rotator initialization failed:',
+            error
+          );
+        }
       }
+
 
       updateEngineState();
-      document.getElementById('settingsModal').classList.remove('active');
-      addMessage(`System: ${apiKeys.length} API key(s) saved. Dual rotation active.`, false);
+
+      document
+        .getElementById('settingsModal')
+        .classList.remove('active');
+
+
+      addMessage(
+        `System: ${apiKeys.length} API key(s) saved.`,
+        false
+      );
     };
 
+
+    // ====================== LOAD SETTINGS ======================
+
     async function loadSettings() {
-      const name = localStorage.getItem('aira_cfg_name');
+
+      const name =
+        localStorage.getItem('aira_cfg_name');
+
       if (name) {
+
         document.getElementById('cfgName').value = name;
-        document.querySelectorAll('.character-name, .header-name').forEach(el => el.textContent = name);
+
+        document
+          .querySelectorAll('.character-name, .header-name')
+          .forEach(el => {
+            el.textContent = name;
+          });
       }
 
-      const raw = localStorage.getItem('aira_cfg_api') || '';
+
+      const raw =
+        localStorage.getItem('aira_cfg_api') || '';
+
       document.getElementById('cfgApiKeys').value = raw;
+
       apiKeys = parseApiKeys(raw);
 
+
       if (apiKeys.length > 0) {
-        await modelRotator.init(apiKeys[0]);
+
+        try {
+          await modelRotator.init(apiKeys[0]);
+        } catch (error) {
+          console.error(
+            'Model rotator initialization failed:',
+            error
+          );
+        }
       }
+
+
       updateEngineState();
     }
 
+
     // ====================== CHAT UI ======================
+
     function addMessage(text, isUser = false) {
+
       const msg = document.createElement('div');
-      msg.className = 'message ' + (isUser ? 'user' : 'ai');
+
+      msg.className =
+        'message ' + (isUser ? 'user' : 'ai');
+
 
       if (!isUser) {
-        const av = document.createElement('img');
+
+        const av =
+          document.createElement('img');
+
         av.className = 'message-avatar';
         av.src = 'avatar/neutral.png';
         av.alt = 'Aira';
+
         msg.appendChild(av);
       }
 
-      const wrap = document.createElement('div');
+
+      const wrap =
+        document.createElement('div');
+
       wrap.className = 'bubble-wrap';
 
-      const bubble = document.createElement('div');
+
+      const bubble =
+        document.createElement('div');
+
       bubble.className = 'bubble';
       bubble.textContent = text;
+
       wrap.appendChild(bubble);
 
-      const meta = document.createElement('div');
+
+      const meta =
+        document.createElement('div');
+
       meta.className = 'bubble-meta';
-      meta.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      meta.textContent =
+        new Date().toLocaleTimeString(
+          [],
+          {
+            hour: '2-digit',
+            minute: '2-digit'
+          }
+        );
+
       wrap.appendChild(meta);
 
       msg.appendChild(wrap);
+
       messagesEl.appendChild(msg);
-      messagesEl.scrollTop = messagesEl.scrollHeight;
+
+      messagesEl.scrollTop =
+        messagesEl.scrollHeight;
     }
 
+
     function showTyping() {
-      const el = document.createElement('div');
+
+      const el =
+        document.createElement('div');
+
       el.className = 'message ai';
+
       el.id = 'typingIndicator';
+
       el.innerHTML = `
-        <img class="message-avatar" src="avatar/neutral.png" alt="Aira" />
+        <img
+          class="message-avatar"
+          src="avatar/neutral.png"
+          alt="Aira"
+        />
+
         <div class="bubble-wrap">
           <div class="typing">
-            <span></span><span></span><span></span>
+            <span></span>
+            <span></span>
+            <span></span>
           </div>
         </div>
       `;
+
       messagesEl.appendChild(el);
-      messagesEl.scrollTop = messagesEl.scrollHeight;
+
+      messagesEl.scrollTop =
+        messagesEl.scrollHeight;
     }
+
 
     function hideTyping() {
-      const t = document.getElementById('typingIndicator');
-      if (t) t.remove();
+
+      const t =
+        document.getElementById('typingIndicator');
+
+      if (t) {
+        t.remove();
+      }
     }
 
-    // ====================== DUAL ROTATION ENGINE ======================
+
+    // ====================== GEMINI ENGINE ======================
+
     async function callGemini(userText) {
+
       if (apiKeys.length === 0) {
-        return { error: "No API key configured. Open Settings → API." };
+
+        return {
+          error:
+            "No API key configured. Open Settings → API."
+        };
       }
 
-      const totalKeys = apiKeys.length;
-      const totalModels = modelRotator.count() || 8;
 
-      for (let k = 0; k < totalKeys; k++) {
-        const apiKey = apiKeys[currentKeyIndex];
+      const totalKeys =
+        apiKeys.length;
 
-        for (let m = 0; m < totalModels; m++) {
-          const model = modelRotator.getCurrentModel();
+      const totalModels =
+        modelRotator.count() || 8;
+
+
+      for (
+        let keyAttempt = 0;
+        keyAttempt < totalKeys;
+        keyAttempt++
+      ) {
+
+        const apiKey =
+          apiKeys[currentKeyIndex];
+
+
+        for (
+          let modelAttempt = 0;
+          modelAttempt < totalModels;
+          modelAttempt++
+        ) {
+
+          const model =
+            modelRotator.getCurrentModel();
+
 
           try {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/\( {model}:generateContent?key= \){apiKey}`;
 
-            const response = await fetch(url, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                system_instruction: {
-                  parts: [{ text: AIRA_SYSTEM_PROMPT }]
-                },
-                contents: conversationHistory.slice(-10)
-              })
-            });
+            /*
+             * IMPORTANT:
+             * Correct Gemini REST endpoint.
+             */
 
-            const data = await response.json();
+            const url =
+              `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
-            if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
+
+            const response =
+              await fetch(
+                url,
+                {
+                  method: 'POST',
+
+                  headers: {
+                    'Content-Type':
+                      'application/json'
+                  },
+
+                  body: JSON.stringify({
+
+                    system_instruction: {
+                      parts: [
+                        {
+                          text:
+                            AIRA_SYSTEM_PROMPT
+                        }
+                      ]
+                    },
+
+                    contents:
+                      conversationHistory.slice(-10)
+
+                  })
+                }
+              );
+
+
+            let data;
+
+            try {
+              data = await response.json();
+            } catch (jsonError) {
+
+              throw new Error(
+                `Invalid API response (${response.status})`
+              );
+            }
+
+
+            if (
+              response.ok &&
+              data.candidates?.[0]
+                ?.content
+                ?.parts
+                ?.[0]
+                ?.text
+            ) {
+
               return {
-                text: data.candidates[0].content.parts[0].text.trim()
+                text:
+                  data
+                    .candidates[0]
+                    .content
+                    .parts[0]
+                    .text
+                    .trim()
               };
             }
 
-            const errMsg = data.error?.message || "Unknown error";
+
+            const errMsg =
+              data?.error?.message ||
+              `HTTP ${response.status}`;
+
+
+            console.warn(
+              `Gemini error | key ${currentKeyIndex + 1} | model ${model}:`,
+              errMsg
+            );
+
+
+            // ---------- MODEL TEMPORARILY UNAVAILABLE ----------
 
             if (
-              errMsg.includes("high demand") ||
-              errMsg.includes("overloaded") ||
-              errMsg.includes("UNAVAILABLE") ||
-              errMsg.includes("503")
+              response.status === 503 ||
+              /high demand/i.test(errMsg) ||
+              /overloaded/i.test(errMsg) ||
+              /unavailable/i.test(errMsg)
             ) {
+
               modelRotator.next();
+
               continue;
             }
 
+
+            // ---------- QUOTA / RATE LIMIT ----------
+
             if (
-              errMsg.includes("429") ||
-              errMsg.includes("quota") ||
-              errMsg.includes("rate") ||
-              errMsg.includes("RESOURCE_EXHAUSTED")
+              response.status === 429 ||
+              /quota/i.test(errMsg) ||
+              /rate limit/i.test(errMsg) ||
+              /resource_exhausted/i.test(errMsg)
             ) {
+
               break;
             }
 
-            return { error: errMsg };
+
+            // ---------- MODEL NOT FOUND ----------
+
+            if (
+              response.status === 404 ||
+              /not found/i.test(errMsg) ||
+              /not supported/i.test(errMsg)
+            ) {
+
+              modelRotator.next();
+
+              continue;
+            }
+
+
+            // ---------- INVALID API KEY ----------
+
+            if (
+              response.status === 400 ||
+              response.status === 401 ||
+              response.status === 403
+            ) {
+
+              if (
+                /api key/i.test(errMsg) ||
+                /permission/i.test(errMsg) ||
+                /unauthorized/i.test(errMsg) ||
+                /forbidden/i.test(errMsg)
+              ) {
+
+                break;
+              }
+            }
+
+
+            return {
+              error: errMsg
+            };
+
 
           } catch (err) {
+
+            console.error(
+              `Request failed for model ${model}:`,
+              err
+            );
+
             modelRotator.next();
-            continue;
           }
         }
 
-        currentKeyIndex = (currentKeyIndex + 1) % totalKeys;
+
+        // Move to next API key
+
+        currentKeyIndex =
+          (currentKeyIndex + 1) %
+          totalKeys;
+
+
         modelRotator.reset();
       }
 
+
       return {
-        error: "All API keys and models failed. Please try again later."
+        error:
+          "All API keys and models failed. Please try again later."
       };
     }
 
+
     // ====================== SEND ======================
+
     async function sendMessage() {
-      const text = userInput.value.trim();
-      if (!text) return;
+
+      const text =
+        userInput.value.trim();
+
+      if (!text) {
+        return;
+      }
+
 
       addMessage(text, true);
 
-      // ===== DEVICE CONTROL COMMANDS =====
-      const cmd = text.toLowerCase().trim();
 
-      if (cmd === "open chrome" || cmd === "chrome kholo") {
+      // ================= DEVICE CONTROL =================
+
+      const cmd =
+        text.toLowerCase().trim();
+
+
+      if (
+        cmd === "open chrome" ||
+        cmd === "chrome kholo"
+      ) {
+
         userInput.value = '';
         sendBtn.disabled = true;
-        const ok = await AiraAccess.openApp("com.android.chrome");
-        addMessage(ok ? "Chrome open kar diya." : "Chrome nahi khul paya. Accessibility On hai na?", false);
+
+        try {
+
+          const ok =
+            await AiraAccess.openApp(
+              "com.android.chrome"
+            );
+
+          addMessage(
+            ok
+              ? "Chrome open kar diya."
+              : "Chrome nahi khul paya. Accessibility check karo.",
+            false
+          );
+
+        } catch (error) {
+
+          addMessage(
+            "Chrome open nahi ho paya.",
+            false
+          );
+        }
+
         sendBtn.disabled = false;
         userInput.focus();
+
         return;
       }
 
-      if (cmd === "go home" || cmd === "home") {
+
+      if (
+        cmd === "go home" ||
+        cmd === "home"
+      ) {
+
         userInput.value = '';
         sendBtn.disabled = true;
-        const ok = await AiraAccess.goHome();
-        addMessage(ok ? "Home pe le aaya." : "Home nahi ja paya. Accessibility check karo.", false);
+
+        try {
+
+          const ok =
+            await AiraAccess.goHome();
+
+          addMessage(
+            ok
+              ? "Home pe le aaya."
+              : "Home nahi ja paya. Accessibility check karo.",
+            false
+          );
+
+        } catch (error) {
+
+          addMessage(
+            "Home action nahi chal paya.",
+            false
+          );
+        }
+
         sendBtn.disabled = false;
         userInput.focus();
+
         return;
       }
 
-      if (cmd === "go back" || cmd === "back") {
+
+      if (
+        cmd === "go back" ||
+        cmd === "back"
+      ) {
+
         userInput.value = '';
         sendBtn.disabled = true;
-        const ok = await AiraAccess.goBack();
-        addMessage(ok ? "Back kar diya." : "Back nahi ho paya.", false);
+
+        try {
+
+          const ok =
+            await AiraAccess.goBack();
+
+          addMessage(
+            ok
+              ? "Back kar diya."
+              : "Back nahi ho paya.",
+            false
+          );
+
+        } catch (error) {
+
+          addMessage(
+            "Back action nahi chal paya.",
+            false
+          );
+        }
+
         sendBtn.disabled = false;
         userInput.focus();
+
         return;
       }
 
-      if (cmd === "open notifications" || cmd === "notifications") {
+
+      if (
+        cmd === "open notifications" ||
+        cmd === "notifications"
+      ) {
+
         userInput.value = '';
         sendBtn.disabled = true;
-        const ok = await AiraAccess.openNotifications();
-        addMessage(ok ? "Notifications open kiye." : "Notifications nahi khul paye.", false);
+
+        try {
+
+          const ok =
+            await AiraAccess.openNotifications();
+
+          addMessage(
+            ok
+              ? "Notifications open kiye."
+              : "Notifications nahi khul paye.",
+            false
+          );
+
+        } catch (error) {
+
+          addMessage(
+            "Notifications open nahi ho paye.",
+            false
+          );
+        }
+
         sendBtn.disabled = false;
         userInput.focus();
+
         return;
       }
 
-      if (cmd === "open recents" || cmd === "recents") {
+
+      if (
+        cmd === "open recents" ||
+        cmd === "recents"
+      ) {
+
         userInput.value = '';
         sendBtn.disabled = true;
-        const ok = await AiraAccess.openRecents();
-        addMessage(ok ? "Recents open kiye." : "Recents nahi khul paye.", false);
+
+        try {
+
+          const ok =
+            await AiraAccess.openRecents();
+
+          addMessage(
+            ok
+              ? "Recents open kiye."
+              : "Recents nahi khul paye.",
+            false
+          );
+
+        } catch (error) {
+
+          addMessage(
+            "Recents open nahi ho paye.",
+            false
+          );
+        }
+
         sendBtn.disabled = false;
         userInput.focus();
+
         return;
       }
-      // ===== END DEVICE CONTROL =====
+
+
+      // ================= NORMAL AI MESSAGE =================
 
       userInput.value = '';
+
       userInput.style.height = 'auto';
+
       sendBtn.disabled = true;
+
       showTyping();
+
 
       conversationHistory.push({
         role: "user",
-        parts: [{ text }]
+        parts: [
+          {
+            text: text
+          }
+        ]
       });
 
-      const result = await callGemini(text);
+
+      const result =
+        await callGemini(text);
+
+
       hideTyping();
 
+
       if (result.text) {
-        addMessage(result.text, false);
+
+        addMessage(
+          result.text,
+          false
+        );
+
+
         conversationHistory.push({
           role: "model",
-          parts: [{ text: result.text }]
+          parts: [
+            {
+              text: result.text
+            }
+          ]
         });
+
       } else {
-        addMessage("⚠️ " + (result.error || "Something went wrong"), false);
+
+        /*
+         * Remove failed user message from API history,
+         * otherwise retrying can duplicate it.
+         */
+
+        if (
+          conversationHistory[
+            conversationHistory.length - 1
+          ]?.role === "user"
+        ) {
+
+          conversationHistory.pop();
+        }
+
+
+        addMessage(
+          "Error: " +
+          (
+            result.error ||
+            "Something went wrong"
+          ),
+          false
+        );
       }
 
+
       updateEngineState();
+
       sendBtn.disabled = false;
+
       userInput.focus();
     }
 
+
     // ====================== INPUT ======================
-    sendBtn.onclick = sendMessage;
 
-    userInput.onkeydown = (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
-      }
-    };
+    sendBtn.onclick =
+      sendMessage;
 
-    userInput.oninput = () => {
-      userInput.style.height = 'auto';
-      userInput.style.height = Math.min(userInput.scrollHeight, 120) + 'px';
-    };
+
+    userInput.onkeydown =
+      (e) => {
+
+        if (
+          e.key === 'Enter' &&
+          !e.shiftKey
+        ) {
+
+          e.preventDefault();
+
+          sendMessage();
+        }
+      };
+
+
+    userInput.oninput =
+      () => {
+
+        userInput.style.height =
+          'auto';
+
+        userInput.style.height =
+          Math.min(
+            userInput.scrollHeight,
+            120
+          ) + 'px';
+      };
+
 
     // ====================== CLEAR CHAT ======================
-    document.getElementById('clearChatBtn').onclick = () => {
-      if (confirm('Clear all messages?')) {
-        messagesEl.innerHTML = '';
-        conversationHistory = [];
-        addMessage("Hi, I'm Aira. How can I support you today?", false);
-      }
-    };
+
+    document
+      .getElementById('clearChatBtn')
+      .onclick = () => {
+
+        if (
+          confirm(
+            'Clear all messages?'
+          )
+        ) {
+
+          messagesEl.innerHTML = '';
+
+          conversationHistory = [];
+
+          addMessage(
+            "Hi, I'm Aira. How can I support you today?",
+            false
+          );
+        }
+      };
+
 
     // ====================== INIT ======================
-    document.addEventListener('DOMContentLoaded', async () => {
-      await loadSettings();
-      addMessage("Hi, I'm Aira. How can I support you today?", false);
-    });
+
+    document.addEventListener(
+      'DOMContentLoaded',
+      async () => {
+
+        await loadSettings();
+
+        addMessage(
+          "Hi, I'm Aira. How can I support you today?",
+          false
+        );
+      }
+    );
+
   </script>
 
 </body>
