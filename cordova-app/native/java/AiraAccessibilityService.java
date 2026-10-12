@@ -39,19 +39,31 @@ public class AiraAccessibilityService extends AccessibilityService {
         instance = null;
     }
 
-    // Open app by package name
+    // Open app by package name (strong version)
     public boolean openApp(String packageName) {
         try {
             Intent intent = getPackageManager().getLaunchIntentForPackage(packageName);
-            if (intent != null) {
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                startActivity(intent);
-                return true;
+
+            if (intent == null) {
+                // Fallback for Android 11+ package visibility issues
+                intent = new Intent(Intent.ACTION_MAIN);
+                intent.addCategory(Intent.CATEGORY_LAUNCHER);
+                intent.setPackage(packageName);
             }
+
+            if (intent == null) {
+                Log.e(TAG, "No launch intent for: " + packageName);
+                return false;
+            }
+
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+            Log.d(TAG, "Opened app: " + packageName);
+            return true;
         } catch (Exception e) {
             Log.e(TAG, "Open app failed: " + e.getMessage());
+            return false;
         }
-        return false;
     }
 
     // Click by visible text
