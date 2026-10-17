@@ -5,9 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Aira</title>
 
-  <meta http-equiv="Content-Security-Policy"
-        content="default-src * 'unsafe-inline' 'unsafe-eval' data: gap: content: blob:;">
-
+  <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: gap: content: blob:;">
   <script src="cordova.js"></script>
 
   <!-- Model System -->
@@ -17,10 +15,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;1,400&display=swap"
-    rel="stylesheet"
-  />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet" />
 
   <style>
     :root {
@@ -37,14 +32,9 @@
       --drawer-width: 320px;
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
-    html,
-    body {
+    html, body {
       height: 100%;
       background: var(--bg);
       color: var(--text);
@@ -53,615 +43,257 @@
       overflow: hidden;
     }
 
-    .app {
-      display: flex;
-      height: 100vh;
-      position: relative;
-    }
+    .app { display: flex; height: 100vh; position: relative; }
 
     .drawer {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: var(--drawer-width);
-      height: 100%;
+      position: fixed; top: 0; left: 0;
+      width: var(--drawer-width); height: 100%;
       background: var(--surface);
       border-right: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
+      display: flex; flex-direction: column;
       z-index: 100;
       transform: translateX(-100%);
       transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     }
-
-    .drawer.open {
-      transform: translateX(0);
-    }
+    .drawer.open { transform: translateX(0); }
 
     .drawer-overlay {
-      position: fixed;
-      inset: 0;
+      position: fixed; inset: 0;
       background: rgba(0, 0, 0, 0.45);
-      z-index: 90;
-      opacity: 0;
-      pointer-events: none;
+      z-index: 90; opacity: 0; pointer-events: none;
       transition: opacity 0.3s ease;
     }
+    .drawer-overlay.visible { opacity: 1; pointer-events: auto; }
 
-    .drawer-overlay.visible {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    .drawer-header {
-      padding: 20px 20px 0;
-      display: flex;
-      justify-content: flex-end;
-    }
+    .drawer-header { padding: 20px 20px 0; display: flex; justify-content: flex-end; }
 
     .close-btn {
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: transparent;
-      color: var(--text-secondary);
-      display: grid;
-      place-items: center;
-      cursor: pointer;
+      width: 36px; height: 36px; border-radius: 10px;
+      border: 1px solid var(--border); background: transparent;
+      color: var(--text-secondary); display: grid; place-items: center; cursor: pointer;
     }
 
     .character-section {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 12px 28px 28px;
-      overflow-y: auto;
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      padding: 12px 28px 28px; overflow-y: auto;
     }
 
     .character-frame {
-      width: 200px;
-      height: 200px;
-      border-radius: 50%;
-      overflow: hidden;
+      width: 200px; height: 200px; border-radius: 50%; overflow: hidden;
       background: var(--surface-2);
-      box-shadow:
-        0 0 0 1px var(--border),
-        0 16px 40px rgba(0, 0, 0, 0.35);
+      box-shadow: 0 0 0 1px var(--border), 0 16px 40px rgba(0,0,0,0.35);
       flex-shrink: 0;
     }
-
     .character-frame img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      object-position: center top;
-      display: block;
+      width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block;
     }
 
-    .character-info {
-      margin-top: 24px;
-      text-align: center;
-      width: 100%;
-    }
-
+    .character-info { margin-top: 24px; text-align: center; width: 100%; }
     .character-name {
       font-family: "Playfair Display", Georgia, serif;
-      font-size: 28px;
-      font-weight: 500;
-      margin-bottom: 8px;
+      font-size: 28px; font-weight: 500; margin-bottom: 8px;
     }
-
     .character-status {
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      font-size: 13px;
-      background: var(--accent-soft);
-      color: var(--accent);
-      padding: 6px 14px;
-      border-radius: 100px;
+      display: inline-flex; align-items: center; gap: 7px;
+      font-size: 13px; background: var(--accent-soft); color: var(--accent);
+      padding: 6px 14px; border-radius: 100px;
     }
-
     .status-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--accent);
-      box-shadow: 0 0 8px var(--accent);
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--accent); box-shadow: 0 0 8px var(--accent);
     }
-
     .emotion-label {
-      margin-top: 20px;
-      font-size: 11px;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--text-secondary);
+      margin-top: 20px; font-size: 11px; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--text-secondary);
     }
-
-    .emotion-name {
-      font-size: 15px;
-      font-weight: 500;
-      margin-top: 4px;
-    }
+    .emotion-name { font-size: 15px; font-weight: 500; margin-top: 4px; }
 
     .profile-section {
-      width: 100%;
-      margin-top: auto;
-      padding-top: 24px;
+      width: 100%; margin-top: auto; padding-top: 24px;
       border-top: 1px solid var(--border);
     }
-
     .profile-title {
-      font-size: 11px;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--text-secondary);
-      margin-bottom: 14px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--text-secondary); margin-bottom: 14px;
+      display: flex; justify-content: space-between; align-items: center;
     }
-
     .settings-trigger-btn {
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 6px 12px;
-      border-radius: 8px;
-      font-size: 12px;
-      cursor: pointer;
+      background: var(--surface-2); border: 1px solid var(--border);
+      color: var(--text); padding: 6px 12px; border-radius: 8px;
+      font-size: 12px; cursor: pointer;
     }
-
     .profile-item {
-      display: flex;
-      justify-content: space-between;
-      padding: 8px 0;
-      font-size: 13px;
+      display: flex; justify-content: space-between;
+      padding: 8px 0; font-size: 13px;
     }
-
-    .profile-item .label {
-      color: var(--text-secondary);
-    }
-
-    .profile-item .value {
-      font-weight: 500;
-    }
-
+    .profile-item .label { color: var(--text-secondary); }
+    .profile-item .value { font-weight: 500; }
     .profile-bio {
-      margin-top: 14px;
-      font-size: 13px;
-      line-height: 1.55;
-      color: var(--text-secondary);
+      margin-top: 14px; font-size: 13px; line-height: 1.55; color: var(--text-secondary);
     }
 
     .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.75);
-      backdrop-filter: blur(8px);
-      z-index: 200;
-      display: none;
-      place-items: center;
-      padding: 16px;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.75); backdrop-filter: blur(8px);
+      z-index: 200; display: none; place-items: center; padding: 16px;
     }
-
-    .modal-overlay.active {
-      display: grid;
-    }
+    .modal-overlay.active { display: grid; }
 
     .settings-card {
-      width: 100%;
-      max-width: 720px;
-      height: 480px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
+      width: 100%; max-width: 720px; height: 480px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; display: flex; flex-direction: column; overflow: hidden;
     }
-
     .settings-header {
-      padding: 16px 20px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      padding: 16px 20px; border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
     }
-
     .settings-header h3 {
-      font-family: "Playfair Display", Georgia, serif;
-      font-size: 20px;
+      font-family: "Playfair Display", Georgia, serif; font-size: 20px;
     }
-
-    .settings-body {
-      display: flex;
-      flex: 1;
-      min-height: 0;
-    }
-
+    .settings-body { display: flex; flex: 1; min-height: 0; }
     .settings-nav {
-      width: 180px;
-      background: var(--surface-2);
-      border-right: 1px solid var(--border);
-      padding: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
+      width: 180px; background: var(--surface-2);
+      border-right: 1px solid var(--border); padding: 12px;
+      display: flex; flex-direction: column; gap: 4px;
     }
-
     .nav-tab {
-      padding: 10px 14px;
-      border-radius: 10px;
-      border: none;
-      background: transparent;
-      color: var(--text-secondary);
-      font-size: 13px;
-      text-align: left;
-      cursor: pointer;
+      padding: 10px 14px; border-radius: 10px; border: none;
+      background: transparent; color: var(--text-secondary);
+      font-size: 13px; text-align: left; cursor: pointer;
     }
-
     .nav-tab.active {
-      background: var(--accent-soft);
-      color: var(--accent);
-      font-weight: 500;
+      background: var(--accent-soft); color: var(--accent); font-weight: 500;
     }
-
-    .settings-content {
-      flex: 1;
-      padding: 20px;
-      overflow-y: auto;
-    }
-
-    .tab-panel {
-      display: none;
-    }
-
-    .tab-panel.active {
-      display: block;
-    }
-
-    .tab-panel h4 {
-      font-size: 15px;
-      margin-bottom: 16px;
-    }
-
-    .input-group {
-      margin-bottom: 16px;
-    }
-
+    .settings-content { flex: 1; padding: 20px; overflow-y: auto; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+    .tab-panel h4 { font-size: 15px; margin-bottom: 16px; }
+    .input-group { margin-bottom: 16px; }
     .input-group label {
-      display: block;
-      font-size: 12px;
-      color: var(--text-secondary);
-      margin-bottom: 6px;
+      display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px;
     }
-
-    .input-group input,
-    .input-group textarea,
-    .input-group select {
-      width: 100%;
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 10px 14px;
-      color: var(--text);
-      font-size: 13px;
-      outline: none;
-      font-family: inherit;
+    .input-group input, .input-group textarea, .input-group select {
+      width: 100%; background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 10px 14px; color: var(--text);
+      font-size: 13px; outline: none; font-family: inherit;
     }
-
     .settings-footer {
-      padding: 12px 20px;
-      border-top: 1px solid var(--border);
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
+      padding: 12px 20px; border-top: 1px solid var(--border);
+      display: flex; justify-content: flex-end; gap: 10px;
     }
-
     .action-btn {
-      padding: 8px 18px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: transparent;
-      color: var(--text);
-      font-size: 13px;
-      cursor: pointer;
+      padding: 8px 18px; border-radius: 10px; border: 1px solid var(--border);
+      background: transparent; color: var(--text); font-size: 13px; cursor: pointer;
     }
-
     .action-btn.primary {
-      background: var(--accent);
-      color: #100a1c;
-      border: none;
-      font-weight: 500;
+      background: var(--accent); color: #100a1c; border: none; font-weight: 500;
     }
 
-    .chat-panel {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      min-width: 0;
-    }
-
+    .chat-panel { flex: 1; display: flex; flex-direction: column; min-width: 0; }
     .chat-header {
-      height: 64px;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      padding: 0 20px;
-      border-bottom: 1px solid var(--border);
-      background: rgba(15, 15, 18, 0.85);
-      backdrop-filter: blur(12px);
+      height: 64px; display: flex; align-items: center; gap: 14px;
+      padding: 0 20px; border-bottom: 1px solid var(--border);
+      background: rgba(15,15,18,0.85); backdrop-filter: blur(12px);
     }
-
     .menu-btn {
-      width: 40px;
-      height: 40px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      background: transparent;
-      color: var(--text-secondary);
-      display: grid;
-      place-items: center;
-      cursor: pointer;
+      width: 40px; height: 40px; border-radius: 12px;
+      border: 1px solid var(--border); background: transparent;
+      color: var(--text-secondary); display: grid; place-items: center; cursor: pointer;
     }
-
-    .header-character {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
+    .header-character { display: flex; align-items: center; gap: 12px; }
     .header-avatar {
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      background: var(--surface-2);
-      object-fit: cover;
-      object-position: center top;
-      display: block;
+      width: 36px; height: 36px; border-radius: 50%;
+      background: var(--surface-2); object-fit: cover; object-position: center top; display: block;
     }
-
-    .header-name {
-      font-size: 15px;
-      font-weight: 500;
-    }
-
+    .header-name { font-size: 15px; font-weight: 500; }
     .header-status {
-      font-size: 12px;
-      color: var(--text-secondary);
-      display: flex;
-      align-items: center;
-      gap: 5px;
+      font-size: 12px; color: var(--text-secondary);
+      display: flex; align-items: center; gap: 5px;
     }
-
     .header-status .dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #34d399;
+      width: 6px; height: 6px; border-radius: 50%; background: #34d399;
     }
-
-    .header-actions {
-      margin-left: auto;
-    }
-
+    .header-actions { margin-left: auto; }
     .icon-btn {
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: transparent;
-      color: var(--text-secondary);
-      display: grid;
-      place-items: center;
-      cursor: pointer;
+      width: 36px; height: 36px; border-radius: 10px;
+      border: 1px solid var(--border); background: transparent;
+      color: var(--text-secondary); display: grid; place-items: center; cursor: pointer;
     }
 
     .messages {
-      flex: 1;
-      overflow-y: auto;
-      padding: 24px 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
+      flex: 1; overflow-y: auto; padding: 24px 20px;
+      display: flex; flex-direction: column; gap: 18px;
     }
-
     .message {
-      display: flex;
-      gap: 12px;
-      max-width: 780px;
-      width: 100%;
+      display: flex; gap: 12px; max-width: 780px; width: 100%;
       animation: fadeUp 0.3s ease;
     }
-
     @keyframes fadeUp {
-      from {
-        opacity: 0;
-        transform: translateY(8px);
-      }
-      to {
-        opacity: 1;
-        transform: none;
-      }
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: none; }
     }
-
-    .message.user {
-      align-self: flex-end;
-      flex-direction: row-reverse;
-    }
-
+    .message.user { align-self: flex-end; flex-direction: row-reverse; }
     .message-avatar {
-      width: 34px;
-      height: 34px;
-      border-radius: 50%;
-      background: var(--surface-2);
-      object-fit: cover;
-      object-position: center top;
-      display: block;
-      flex-shrink: 0;
+      width: 34px; height: 34px; border-radius: 50%;
+      background: var(--surface-2); object-fit: cover; object-position: center top;
+      display: block; flex-shrink: 0;
     }
-
-    .message.user .message-avatar {
-      display: none;
-    }
-
-    .bubble-wrap {
-      max-width: 75%;
-    }
-
+    .message.user .message-avatar { display: none; }
+    .bubble-wrap { max-width: 75%; }
     .message.user .bubble-wrap {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
+      display: flex; flex-direction: column; align-items: flex-end;
     }
-
     .bubble {
-      padding: 13px 17px;
-      border-radius: 18px;
-      font-size: 15px;
-      line-height: 1.55;
-      display: inline-block;
-      white-space: pre-wrap;
-      overflow-wrap: anywhere;
+      padding: 13px 17px; border-radius: 18px;
+      font-size: 15px; line-height: 1.55;
+      display: inline-block; white-space: pre-wrap;
     }
-
     .message.ai .bubble {
-      background: var(--ai-bubble);
-      border: 1px solid var(--border);
+      background: var(--ai-bubble); border: 1px solid var(--border);
       border-bottom-left-radius: 5px;
     }
-
     .message.user .bubble {
-      background: var(--user-bubble);
-      border-bottom-right-radius: 5px;
+      background: var(--user-bubble); border-bottom-right-radius: 5px;
     }
-
     .bubble-meta {
-      font-size: 11px;
-      color: var(--text-secondary);
-      margin-top: 5px;
-      padding: 0 4px;
+      font-size: 11px; color: var(--text-secondary); margin-top: 5px; padding: 0 4px;
     }
 
     .typing {
-      display: flex;
-      gap: 5px;
-      padding: 14px 18px;
-      background: var(--ai-bubble);
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      border-bottom-left-radius: 5px;
-      width: fit-content;
+      display: flex; gap: 5px; padding: 14px 18px;
+      background: var(--ai-bubble); border: 1px solid var(--border);
+      border-radius: 18px; border-bottom-left-radius: 5px; width: fit-content;
     }
-
     .typing span {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--text-secondary);
-      animation: typing 1.2s ease infinite;
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--text-secondary); animation: typing 1.2s ease infinite;
     }
-
-    .typing span:nth-child(2) {
-      animation-delay: 0.15s;
-    }
-
-    .typing span:nth-child(3) {
-      animation-delay: 0.3s;
-    }
-
+    .typing span:nth-child(2) { animation-delay: 0.15s; }
+    .typing span:nth-child(3) { animation-delay: 0.3s; }
     @keyframes typing {
-      0%,
-      60%,
-      100% {
-        transform: translateY(0);
-        opacity: 0.4;
-      }
-
-      30% {
-        transform: translateY(-4px);
-        opacity: 1;
-      }
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+      30% { transform: translateY(-4px); opacity: 1; }
     }
 
-    .input-area {
-      padding: 12px 20px 22px;
-      border-top: 1px solid var(--border);
-    }
-
+    .input-area { padding: 12px 20px 22px; border-top: 1px solid var(--border); }
     .input-box {
-      display: flex;
-      align-items: flex-end;
-      gap: 12px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 10px 12px 10px 16px;
-      max-width: 900px;
-      margin: 0 auto;
+      display: flex; align-items: flex-end; gap: 12px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 10px 12px 10px 16px;
+      max-width: 900px; margin: 0 auto;
     }
-
-    #userInput {
-      flex: 1;
-      background: transparent;
-      border: none;
-      outline: none;
-      resize: none;
-      color: var(--text);
-      font-family: inherit;
-      font-size: 15px;
-      line-height: 1.45;
-      max-height: 120px;
-      min-height: 24px;
-      padding: 6px 0;
+    textarea {
+      flex: 1; background: transparent; border: none; outline: none; resize: none;
+      color: var(--text); font-family: inherit; font-size: 15px; line-height: 1.45;
+      max-height: 120px; min-height: 24px; padding: 6px 0;
     }
-
     .send-btn {
-      width: 40px;
-      height: 40px;
-      border-radius: 12px;
-      border: none;
-      background: var(--accent);
-      color: #1a1525;
-      display: grid;
-      place-items: center;
-      cursor: pointer;
-      flex-shrink: 0;
+      width: 40px; height: 40px; border-radius: 12px; border: none;
+      background: var(--accent); color: #1a1525;
+      display: grid; place-items: center; cursor: pointer; flex-shrink: 0;
     }
-
-    .send-btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    @media (max-width: 600px) {
-      :root {
-        --drawer-width: min(320px, 88vw);
-      }
-
-      .settings-card {
-        height: min(560px, 90vh);
-      }
-
-      .settings-nav {
-        width: 120px;
-      }
-
-      .messages {
-        padding: 18px 12px;
-      }
-
-      .input-area {
-        padding: 10px 12px 16px;
-      }
-
-      .bubble-wrap {
-        max-width: 85%;
-      }
-    }
+    .send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
   </style>
 </head>
 
@@ -671,7 +303,7 @@
 
     <aside class="drawer" id="drawer">
       <div class="drawer-header">
-        <button class="close-btn" id="closeDrawer" type="button">
+        <button class="close-btn" id="closeDrawer">
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M4 4l8 8M12 4l-8 8"/>
           </svg>
@@ -682,15 +314,12 @@
         <div class="character-frame">
           <img id="characterImage" src="avatar/neutral.png" alt="Aira" />
         </div>
-
         <div class="character-info">
           <h1 class="character-name">Aira</h1>
-
           <div class="character-status">
             <span class="status-dot"></span>
             Online
           </div>
-
           <div class="emotion-label">Current Feeling</div>
           <div class="emotion-name" id="emotionName">Calm</div>
         </div>
@@ -698,34 +327,13 @@
         <div class="profile-section">
           <div class="profile-title">
             <span>Profile</span>
-            <button class="settings-trigger-btn" id="openSettingsBtn" type="button">
-              Settings
-            </button>
+            <button class="settings-trigger-btn" id="openSettingsBtn">Settings</button>
           </div>
-
-          <div class="profile-item">
-            <span class="label">Name</span>
-            <span class="value">Aira</span>
-          </div>
-
-          <div class="profile-item">
-            <span class="label">Persona</span>
-            <span class="value">Companion</span>
-          </div>
-
-          <div class="profile-item">
-            <span class="label">Mood</span>
-            <span class="value" id="profileMood">Calm</span>
-          </div>
-
-          <div class="profile-item">
-            <span class="label">Engine</span>
-            <span class="value" id="engineStatusVal">No Key Set</span>
-          </div>
-
-          <p class="profile-bio">
-            A warm and thoughtful companion who listens deeply and responds with care.
-          </p>
+          <div class="profile-item"><span class="label">Name</span><span class="value">Aira</span></div>
+          <div class="profile-item"><span class="label">Persona</span><span class="value">Companion</span></div>
+          <div class="profile-item"><span class="label">Mood</span><span class="value" id="profileMood">Calm</span></div>
+          <div class="profile-item"><span class="label">Engine</span><span class="value" id="engineStatusVal">No Key Set</span></div>
+          <p class="profile-bio">A warm and thoughtful companion who listens deeply and responds with care.</p>
         </div>
       </div>
     </aside>
@@ -734,100 +342,59 @@
       <div class="settings-card">
         <div class="settings-header">
           <h3>Settings</h3>
-          <button class="close-btn" id="closeSettingsBtn" type="button">X</button>
+          <button class="close-btn" id="closeSettingsBtn">X</button>
         </div>
-
         <div class="settings-body">
           <div class="settings-nav">
-            <button class="nav-tab active" data-tab="general" type="button">
-              General
-            </button>
-
-            <button class="nav-tab" data-tab="api" type="button">
-              API
-            </button>
+            <button class="nav-tab active" data-tab="general">General</button>
+            <button class="nav-tab" data-tab="api">API</button>
           </div>
-
           <div class="settings-content">
             <div class="tab-panel active" id="tab-general">
               <h4>General Settings</h4>
-
               <div class="input-group">
-                <label for="cfgName">Companion Name</label>
+                <label>Companion Name</label>
                 <input type="text" id="cfgName" value="Aira" />
               </div>
             </div>
-
             <div class="tab-panel" id="tab-api">
               <h4>API Configuration</h4>
-
-              <p
-                style="
-                  font-size: 12px;
-                  color: var(--text-secondary);
-                  margin-bottom: 12px;
-                  line-height: 1.5;
-                "
-              >
-                Multiple keys support:<br />
-                <code>1=AIzaSyKey1...</code><br />
-                <code>2=AIzaSyKey2...</code><br />
+              <p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;line-height:1.5;">
+                Multiple keys support:<br>
+                <code>1=AIzaSyKey1...</code><br>
+                <code>2=AIzaSyKey2...</code><br>
                 <code>3=AIzaSyKey3...</code>
               </p>
-
               <div class="input-group">
-                <label for="cfgApiKeys">Gemini API Keys</label>
-
-                <textarea
-                  id="cfgApiKeys"
-                  rows="8"
-                  placeholder="1=AIzaSy...&#10;2=AIzaSy...&#10;3=AIzaSy..."
-                ></textarea>
+                <label>Gemini API Keys</label>
+                <textarea id="cfgApiKeys" rows="8" placeholder="1=AIzaSy...&#10;2=AIzaSy...&#10;3=AIzaSy..."></textarea>
               </div>
             </div>
           </div>
         </div>
-
         <div class="settings-footer">
-          <button class="action-btn" id="cancelSettingsBtn" type="button">
-            Cancel
-          </button>
-
-          <button class="action-btn primary" id="saveSettingsBtn" type="button">
-            Save
-          </button>
+          <button class="action-btn" id="cancelSettingsBtn">Cancel</button>
+          <button class="action-btn primary" id="saveSettingsBtn">Save</button>
         </div>
       </div>
     </div>
 
-    <main class="chat-panel">
+    <div class="chat-panel">
       <div class="chat-header">
-        <button class="menu-btn" id="openDrawer" type="button">
+        <button class="menu-btn" id="openDrawer">
           <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M4 6h12M4 10h12M4 14h12"/>
           </svg>
         </button>
-
         <div class="header-character">
-          <img
-            class="header-avatar"
-            id="headerAvatar"
-            src="avatar/neutral.png"
-            alt="Aira"
-          />
-
+          <img class="header-avatar" id="headerAvatar" src="avatar/neutral.png" alt="Aira" />
           <div>
             <div class="header-name">Aira</div>
-
-            <div class="header-status">
-              <span class="dot"></span>
-              Online
-            </div>
+            <div class="header-status"><span class="dot"></span> Online</div>
           </div>
         </div>
-
         <div class="header-actions">
-          <button class="icon-btn" id="clearChatBtn" type="button">
+          <button class="icon-btn" id="clearChatBtn">
             <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M4 6h12M6 6v10a1 1 0 001 1h6a1 1 0 001-1V6M8 6V4h4v2"/>
             </svg>
@@ -839,50 +406,33 @@
 
       <div class="input-area">
         <div class="input-box">
-          <textarea
-            id="userInput"
-            placeholder="Message Aira..."
-            rows="1"
-          ></textarea>
-
-          <button class="send-btn" id="sendBtn" type="button">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.2"
-              width="18"
-              height="18"
-            >
+          <textarea id="userInput" placeholder="Message Aira..." rows="1"></textarea>
+          <button class="send-btn" id="sendBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="18" height="18">
               <path d="M22 2L11 13"/>
               <path d="M22 2L15 22L11 13L2 9L22 2Z"/>
             </svg>
           </button>
         </div>
       </div>
-    </main>
+    </div>
   </div>
 
   <script>
-    const drawer = document.getElementById("drawer");
-    const overlay = document.getElementById("overlay");
-    const messagesEl = document.getElementById("messages");
-    const userInput = document.getElementById("userInput");
-    const sendBtn = document.getElementById("sendBtn");
-    const engineStatusVal = document.getElementById("engineStatusVal");
+    const drawer = document.getElementById('drawer');
+    const overlay = document.getElementById('overlay');
+    const messagesEl = document.getElementById('messages');
+    const userInput = document.getElementById('userInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const engineStatusVal = document.getElementById('engineStatusVal');
 
     const AIRA_SYSTEM_PROMPT = `
 You are Aira, a warm, emotionally present, intelligent AI companion on the user's Android phone.
-
-You may control supported device actions using Aira's accessibility bridge.
+You can control the device using accessibility.
 
 When the user asks to open an app, go home, go back, open notifications, or open recents:
-
-1. Reply briefly and naturally.
-2. Hindi, English, or a natural Hindi-English mix is fine.
-3. On a NEW line at the END, output exactly one machine action when the requested action is supported.
-
-Supported action formats:
+1. Reply briefly in natural language (Hindi/English mix is fine).
+2. On a NEW line at the END, output exactly one machine action:
 
 [[ACTION:OPEN_APP:package.name.here]]
 [[ACTION:GO_HOME]]
@@ -890,913 +440,380 @@ Supported action formats:
 [[ACTION:OPEN_NOTIFICATIONS]]
 [[ACTION:OPEN_RECENTS]]
 
-Known Android packages:
+Common packages:
+- Chrome: com.android.chrome
+- YouTube: com.google.android.youtube
+- Settings: com.android.settings
+- WhatsApp: com.whatsapp
+- Instagram: com.instagram.android
+- Calculator (Realme): com.coloros.calculator
+- Camera: com.oplus.camera
+- Files: com.coloros.filemanager
+- Gmail: com.google.android.gm
+- Maps: com.google.android.apps.maps
+- Play Store: com.android.vending
 
-Chrome: com.android.chrome
-YouTube: com.google.android.youtube
-Settings: com.android.settings
-WhatsApp: com.whatsapp
-Instagram: com.instagram.android
-Calculator: com.coloros.calculator
-Camera: com.oplus.camera
-Files: com.coloros.filemanager
-Gmail: com.google.android.gm
-Maps: com.google.android.apps.maps
-Play Store: com.android.vending
-
-Never invent a package name when you are unsure.
-
-If you do not know the correct package, reply naturally without an ACTION line.
-
-Never explain the internal [[ACTION:...]] syntax to the user.
-
-For normal conversation, do not output any ACTION line.
+If unsure of package, reply helpfully and do NOT invent a fake ACTION line.
+Never explain the [[ACTION:...]] format to the user; only output it as the last line.
+For normal chat (no device control), do not output any ACTION line.
 `;
 
     let conversationHistory = [];
     let apiKeys = [];
     let currentKeyIndex = 0;
+    const modelRotator = new ModelRotator();
 
-    let modelRotator = null;
-
-    try {
-      if (typeof ModelRotator === "function") {
-        modelRotator = new ModelRotator();
-      }
-    } catch (error) {
-      console.error("ModelRotator initialization failed:", error);
-    }
-
-    function openDrawer() {
-      drawer.classList.add("open");
-      overlay.classList.add("visible");
-    }
-
-    function closeDrawer() {
-      drawer.classList.remove("open");
-      overlay.classList.remove("visible");
-    }
-
-    document.getElementById("openDrawer").onclick = openDrawer;
-    document.getElementById("closeDrawer").onclick = closeDrawer;
-    overlay.onclick = closeDrawer;
-
-    document.getElementById("openSettingsBtn").onclick = () => {
-      document.getElementById("settingsModal").classList.add("active");
-      closeDrawer();
+    document.getElementById('openDrawer').onclick = () => {
+      drawer.classList.add('open');
+      overlay.classList.add('visible');
+    };
+    document.getElementById('closeDrawer').onclick = () => {
+      drawer.classList.remove('open');
+      overlay.classList.remove('visible');
+    };
+    overlay.onclick = () => {
+      drawer.classList.remove('open');
+      overlay.classList.remove('visible');
     };
 
-    const closeSettings = () => {
-      document.getElementById("settingsModal").classList.remove("active");
+    document.getElementById('openSettingsBtn').onclick = () => {
+      document.getElementById('settingsModal').classList.add('active');
+      drawer.classList.remove('open');
+      overlay.classList.remove('visible');
+    };
+    document.getElementById('closeSettingsBtn').onclick =
+    document.getElementById('cancelSettingsBtn').onclick = () => {
+      document.getElementById('settingsModal').classList.remove('active');
     };
 
-    document.getElementById("closeSettingsBtn").onclick = closeSettings;
-    document.getElementById("cancelSettingsBtn").onclick = closeSettings;
-
-    document.querySelectorAll(".nav-tab").forEach((tab) => {
+    document.querySelectorAll('.nav-tab').forEach(tab => {
       tab.onclick = () => {
-        document
-          .querySelectorAll(".nav-tab")
-          .forEach((t) => t.classList.remove("active"));
-
-        document
-          .querySelectorAll(".tab-panel")
-          .forEach((p) => p.classList.remove("active"));
-
-        tab.classList.add("active");
-
-        const target = document.getElementById("tab-" + tab.dataset.tab);
-
-        if (target) {
-          target.classList.add("active");
-        }
+        document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
       };
     });
 
     function parseApiKeys(rawText) {
-      if (!rawText) {
-        return [];
-      }
-
+      if (!rawText) return [];
       const keys = [];
-
-      const lines = rawText
-        .split(/\r?\n/)
-        .map((line) => line.trim())
-        .filter(Boolean);
-
-      for (const line of lines) {
+      const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+      for (let line of lines) {
         let key = line;
-
-        if (line.includes("=")) {
-          key = line.substring(line.indexOf("=") + 1).trim();
-        }
-
-        if (key) {
-          keys.push(key);
-        }
+        if (line.includes('=')) key = line.substring(line.indexOf('=') + 1).trim();
+        if (key) keys.push(key);
       }
-
-      return [...new Set(keys)];
-    }
-
-    function getCurrentModel() {
-      try {
-        if (
-          modelRotator &&
-          typeof modelRotator.getCurrentModel === "function"
-        ) {
-          return modelRotator.getCurrentModel();
-        }
-      } catch (error) {
-        console.error("Unable to get current model:", error);
-      }
-
-      return "gemini-flash-latest";
-    }
-
-    function getModelCount() {
-      try {
-        if (modelRotator && typeof modelRotator.count === "function") {
-          return modelRotator.count() || 1;
-        }
-      } catch (error) {
-        console.error("Unable to get model count:", error);
-      }
-
-      return 1;
-    }
-
-    function nextModel() {
-      try {
-        if (modelRotator && typeof modelRotator.next === "function") {
-          modelRotator.next();
-        }
-      } catch (error) {
-        console.error("Model rotation failed:", error);
-      }
-    }
-
-    function resetModels() {
-      try {
-        if (modelRotator && typeof modelRotator.reset === "function") {
-          modelRotator.reset();
-        }
-      } catch (error) {
-        console.error("Model reset failed:", error);
-      }
-    }
-
-    async function initModelRotator(apiKey) {
-      try {
-        if (modelRotator && typeof modelRotator.init === "function") {
-          await modelRotator.init(apiKey);
-        }
-      } catch (error) {
-        console.error("ModelRotator init error:", error);
-      }
+      return keys;
     }
 
     function updateEngineState() {
       if (apiKeys.length > 0) {
-        const model = getCurrentModel();
-
-        engineStatusVal.textContent =
-          `Keys: ${apiKeys.length} | ${model}`;
-
-        engineStatusVal.style.color = "#34d399";
+        const model = modelRotator.getCurrentModel();
+        engineStatusVal.textContent = `Keys: ${apiKeys.length} | ${model}`;
+        engineStatusVal.style.color = '#34d399';
       } else {
-        engineStatusVal.textContent = "No Key Configured";
-        engineStatusVal.style.color = "var(--text-secondary)";
+        engineStatusVal.textContent = 'No Key Configured';
+        engineStatusVal.style.color = 'var(--text-secondary)';
       }
     }
 
-    document.getElementById("saveSettingsBtn").onclick = async () => {
-      const name =
-        document.getElementById("cfgName").value.trim() || "Aira";
+    document.getElementById('saveSettingsBtn').onclick = async () => {
+      const name = document.getElementById('cfgName').value.trim() || 'Aira';
+      document.querySelectorAll('.character-name, .header-name').forEach(el => { el.textContent = name; });
+      localStorage.setItem('aira_cfg_name', name);
 
-      document
-        .querySelectorAll(".character-name, .header-name")
-        .forEach((el) => {
-          el.textContent = name;
-        });
-
-      localStorage.setItem("aira_cfg_name", name);
-
-      const rawKeys = document.getElementById("cfgApiKeys").value;
-
-      localStorage.setItem("aira_cfg_api", rawKeys);
-
+      const rawKeys = document.getElementById('cfgApiKeys').value;
+      localStorage.setItem('aira_cfg_api', rawKeys);
       apiKeys = parseApiKeys(rawKeys);
       currentKeyIndex = 0;
 
       if (apiKeys.length > 0) {
-        await initModelRotator(apiKeys[0]);
+        try { await modelRotator.init(apiKeys[0]); } catch (e) { console.error(e); }
       }
-
       updateEngineState();
-      closeSettings();
-
-      addMessage(
-        `System: ${apiKeys.length} API key(s) saved.`,
-        false
-      );
+      document.getElementById('settingsModal').classList.remove('active');
+      addMessage(`System: ${apiKeys.length} API key(s) saved.`, false);
     };
 
     async function loadSettings() {
-      const name = localStorage.getItem("aira_cfg_name");
-
+      const name = localStorage.getItem('aira_cfg_name');
       if (name) {
-        document.getElementById("cfgName").value = name;
-
-        document
-          .querySelectorAll(".character-name, .header-name")
-          .forEach((el) => {
-            el.textContent = name;
-          });
+        document.getElementById('cfgName').value = name;
+        document.querySelectorAll('.character-name, .header-name').forEach(el => { el.textContent = name; });
       }
-
-      const raw = localStorage.getItem("aira_cfg_api") || "";
-
-      document.getElementById("cfgApiKeys").value = raw;
-
+      const raw = localStorage.getItem('aira_cfg_api') || '';
+      document.getElementById('cfgApiKeys').value = raw;
       apiKeys = parseApiKeys(raw);
-
       if (apiKeys.length > 0) {
-        await initModelRotator(apiKeys[0]);
+        try { await modelRotator.init(apiKeys[0]); } catch (e) { console.error(e); }
       }
-
       updateEngineState();
     }
 
     function addMessage(text, isUser = false) {
-      const msg = document.createElement("div");
-
-      msg.className =
-        "message " + (isUser ? "user" : "ai");
-
+      const msg = document.createElement('div');
+      msg.className = 'message ' + (isUser ? 'user' : 'ai');
       if (!isUser) {
-        const avatar = document.createElement("img");
-
-        avatar.className = "message-avatar";
-        avatar.src = "avatar/neutral.png";
-        avatar.alt = "Aira";
-
-        msg.appendChild(avatar);
+        const av = document.createElement('img');
+        av.className = 'message-avatar';
+        av.src = 'avatar/neutral.png';
+        av.alt = 'Aira';
+        msg.appendChild(av);
       }
-
-      const wrap = document.createElement("div");
-      wrap.className = "bubble-wrap";
-
-      const bubble = document.createElement("div");
-      bubble.className = "bubble";
-      bubble.textContent = String(text ?? "");
-
+      const wrap = document.createElement('div');
+      wrap.className = 'bubble-wrap';
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      bubble.textContent = text;
       wrap.appendChild(bubble);
-
-      const meta = document.createElement("div");
-      meta.className = "bubble-meta";
-
-      meta.textContent =
-        new Date().toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit"
-        });
-
+      const meta = document.createElement('div');
+      meta.className = 'bubble-meta';
+      meta.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       wrap.appendChild(meta);
       msg.appendChild(wrap);
-
       messagesEl.appendChild(msg);
       messagesEl.scrollTop = messagesEl.scrollHeight;
     }
 
     function showTyping() {
-      hideTyping();
-
-      const el = document.createElement("div");
-
-      el.className = "message ai";
-      el.id = "typingIndicator";
-
+      const el = document.createElement('div');
+      el.className = 'message ai';
+      el.id = 'typingIndicator';
       el.innerHTML = `
-        <img
-          class="message-avatar"
-          src="avatar/neutral.png"
-          alt="Aira"
-        />
-        <div class="bubble-wrap">
-          <div class="typing">
-            <span></span>
-            <span></span>
-            <span></span>
-          </div>
-        </div>
-      `;
-
+        <img class="message-avatar" src="avatar/neutral.png" alt="Aira" />
+        <div class="bubble-wrap"><div class="typing"><span></span><span></span><span></span></div></div>`;
       messagesEl.appendChild(el);
       messagesEl.scrollTop = messagesEl.scrollHeight;
     }
 
     function hideTyping() {
-      const typing = document.getElementById("typingIndicator");
-
-      if (typing) {
-        typing.remove();
-      }
-    }
-
-    function accessibilityAvailable() {
-      return (
-        typeof window.AiraAccess !== "undefined" &&
-        window.AiraAccess !== null
-      );
+      const t = document.getElementById('typingIndicator');
+      if (t) t.remove();
     }
 
     async function runDeviceAction(action) {
-      if (!action) {
-        return false;
-      }
-
-      if (!accessibilityAvailable()) {
-        console.warn("AiraAccess bridge is unavailable.");
-        return false;
-      }
-
-      try {
-        if (action.startsWith("OPEN_APP:")) {
-          const pkg = action.substring("OPEN_APP:".length).trim();
-
-          if (!pkg) {
-            return false;
-          }
-
-          if (typeof AiraAccess.openApp !== "function") {
-            return false;
-          }
-
-          return await AiraAccess.openApp(pkg);
-        }
-
-        if (action === "GO_HOME") {
-          if (typeof AiraAccess.goHome !== "function") {
-            return false;
-          }
-
-          return await AiraAccess.goHome();
-        }
-
-        if (action === "GO_BACK") {
-          if (typeof AiraAccess.goBack !== "function") {
-            return false;
-          }
-
-          return await AiraAccess.goBack();
-        }
-
-        if (action === "OPEN_NOTIFICATIONS") {
-          if (typeof AiraAccess.openNotifications !== "function") {
-            return false;
-          }
-
-          return await AiraAccess.openNotifications();
-        }
-
-        if (action === "OPEN_RECENTS") {
-          if (typeof AiraAccess.openRecents !== "function") {
-            return false;
-          }
-
-          return await AiraAccess.openRecents();
-        }
-
-        console.warn("Unknown device action:", action);
-        return false;
-      } catch (error) {
-        console.error("Device action failed:", error);
-        return false;
+      if (!action) return;
+      if (action.startsWith('OPEN_APP:')) {
+        const pkg = action.replace('OPEN_APP:', '').trim();
+        if (pkg) await AiraAccess.openApp(pkg);
+      } else if (action === 'GO_HOME') {
+        await AiraAccess.goHome();
+      } else if (action === 'GO_BACK') {
+        await AiraAccess.goBack();
+      } else if (action === 'OPEN_NOTIFICATIONS') {
+        await AiraAccess.openNotifications();
+      } else if (action === 'OPEN_RECENTS') {
+        await AiraAccess.openRecents();
       }
     }
 
-    function extractGeminiText(data) {
-      const parts =
-        data?.candidates?.[0]?.content?.parts;
-
-      if (!Array.isArray(parts)) {
-        return "";
-      }
-
-      return parts
-        .map((part) => {
-          return typeof part?.text === "string"
-            ? part.text
-            : "";
-        })
-        .join("")
-        .trim();
-    }
-
-    async function callGemini() {
+    async function callGemini(userText) {
       if (apiKeys.length === 0) {
-        return {
-          error:
-            "No API key configured. Open Settings → API."
-        };
+        return { error: "No API key configured. Open Settings → API." };
       }
 
       const totalKeys = apiKeys.length;
-      const totalModels = Math.max(getModelCount(), 1);
+      const totalModels = modelRotator.count() || 8;
 
-      for (
-        let keyAttempt = 0;
-        keyAttempt < totalKeys;
-        keyAttempt++
-      ) {
+      for (let keyAttempt = 0; keyAttempt < totalKeys; keyAttempt++) {
         const apiKey = apiKeys[currentKeyIndex];
 
-        for (
-          let modelAttempt = 0;
-          modelAttempt < totalModels;
-          modelAttempt++
-        ) {
-          const model = getCurrentModel();
+        for (let modelAttempt = 0; modelAttempt < totalModels; modelAttempt++) {
+          const model = modelRotator.getCurrentModel();
 
           try {
-            /*
-              IMPORTANT FIX:
-              The old URL had broken template-literal syntax.
-
-              Correct format:
-              /models/${model}:generateContent?key=${apiKey}
-            */
-
-            const url =
-              `https://generativelanguage.googleapis.com/v1beta/models/` +
-              `${encodeURIComponent(model)}:generateContent` +
-              `?key=${encodeURIComponent(apiKey)}`;
-
-            console.log(
-              `Trying Gemini | key ${currentKeyIndex + 1}/${totalKeys} | model ${model}`
-            );
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/( {model}:generateContent?key= ){encodeURIComponent(apiKey)}`;
 
             const response = await fetch(url, {
-              method: "POST",
-
-              headers: {
-                "Content-Type": "application/json"
-              },
-
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                system_instruction: {
-                  parts: [
-                    {
-                      text: AIRA_SYSTEM_PROMPT
-                    }
-                  ]
-                },
-
+                system_instruction: { parts: [{ text: AIRA_SYSTEM_PROMPT }] },
                 contents: conversationHistory.slice(-10)
               })
             });
 
             let data;
+            try { data = await response.json(); }
+            catch (e) { throw new Error(`Invalid API response (${response.status})`); }
 
-            try {
-              data = await response.json();
-            } catch (jsonError) {
-              throw new Error(
-                `Invalid API response (${response.status})`
-              );
+            if (response.ok && data.candidates?.[0]?.content?.parts?.[0]?.text) {
+              return { text: data.candidates[0].content.parts[0].text.trim() };
             }
 
-            const generatedText = extractGeminiText(data);
+            const errMsg = data?.error?.message || `HTTP ${response.status}`;
+            console.warn(`Gemini error | key ${currentKeyIndex + 1} | model ${model}:`, errMsg);
 
-            if (response.ok && generatedText) {
-              console.log(
-                `Gemini success | key ${currentKeyIndex + 1} | model ${model}`
-              );
-
-              return {
-                text: generatedText,
-                model,
-                keyIndex: currentKeyIndex
-              };
-            }
-
-            const errMsg =
-              data?.error?.message ||
-              `HTTP ${response.status}`;
-
-            console.warn(
-              `Gemini error | key ${currentKeyIndex + 1} | model ${model}:`,
-              errMsg
-            );
-
-            const lowerError =
-              String(errMsg).toLowerCase();
-
-            /*
-              Model overloaded / temporarily unavailable:
-              move to next model.
-            */
-            if (
-              response.status === 503 ||
-              lowerError.includes("high demand") ||
-              lowerError.includes("overloaded") ||
-              lowerError.includes("unavailable")
-            ) {
-              nextModel();
+            if (response.status === 503 || /high demand/i.test(errMsg) || /overloaded/i.test(errMsg) || /unavailable/i.test(errMsg)) {
+              modelRotator.next();
               continue;
             }
-
-            /*
-              Model does not exist / unsupported:
-              move to next model.
-            */
-            if (
-              response.status === 404 ||
-              lowerError.includes("not found") ||
-              lowerError.includes("not supported")
-            ) {
-              nextModel();
-              continue;
-            }
-
-            /*
-              Quota/rate limit:
-              move to next API key.
-            */
-            if (
-              response.status === 429 ||
-              lowerError.includes("quota") ||
-              lowerError.includes("rate limit") ||
-              lowerError.includes("resource_exhausted")
-            ) {
+            if (response.status === 429 || /quota/i.test(errMsg) || /rate limit/i.test(errMsg) || /resource_exhausted/i.test(errMsg)) {
               break;
             }
-
-            /*
-              Invalid/restricted API key:
-              move to next API key.
-            */
-            if (
-              response.status === 400 ||
-              response.status === 401 ||
-              response.status === 403
-            ) {
-              if (
-                lowerError.includes("api key") ||
-                lowerError.includes("permission") ||
-                lowerError.includes("unauthorized") ||
-                lowerError.includes("forbidden")
-              ) {
+            if (response.status === 404 || /not found/i.test(errMsg) || /not supported/i.test(errMsg)) {
+              modelRotator.next();
+              continue;
+            }
+            if (response.status === 400 || response.status === 401 || response.status === 403) {
+              if (/api key/i.test(errMsg) || /permission/i.test(errMsg) || /unauthorized/i.test(errMsg) || /forbidden/i.test(errMsg)) {
                 break;
               }
             }
-
-            return {
-              error: errMsg
-            };
-          } catch (error) {
-            console.error(
-              `Request failed for model ${model}:`,
-              error
-            );
-
-            nextModel();
+            return { error: errMsg };
+          } catch (err) {
+            console.error(`Request failed for model ${model}:`, err);
+            modelRotator.next();
           }
         }
 
-        currentKeyIndex =
-          (currentKeyIndex + 1) % totalKeys;
-
-        resetModels();
-
-        if (apiKeys[currentKeyIndex]) {
-          await initModelRotator(
-            apiKeys[currentKeyIndex]
-          );
-        }
+        currentKeyIndex = (currentKeyIndex + 1) % totalKeys;
+        modelRotator.reset();
       }
 
-      return {
-        error:
-          "All API keys and models failed. Please try again later."
-      };
-    }
-
-    function clearInput() {
-      userInput.value = "";
-      userInput.style.height = "auto";
-    }
-
-    async function executeFastAction(
-      actionFunction,
-      successMessage,
-      failureMessage
-    ) {
-      clearInput();
-      sendBtn.disabled = true;
-
-      try {
-        if (!accessibilityAvailable()) {
-          addMessage(
-            "Accessibility bridge available nahi hai.",
-            false
-          );
-
-          return;
-        }
-
-        const ok = await actionFunction();
-
-        addMessage(
-          ok ? successMessage : failureMessage,
-          false
-        );
-      } catch (error) {
-        console.error(error);
-        addMessage(failureMessage, false);
-      } finally {
-        sendBtn.disabled = false;
-        userInput.focus();
-      }
+      return { error: "All API keys and models failed. Please try again later." };
     }
 
     async function sendMessage() {
       const text = userInput.value.trim();
-
-      if (!text || sendBtn.disabled) {
-        return;
-      }
+      if (!text) return;
 
       addMessage(text, true);
 
       const cmd = text.toLowerCase().trim();
 
-      /*
-        FAST DEVICE ACTIONS
-        These work without calling Gemini.
-      */
-
-      if (
-        cmd === "open chrome" ||
-        cmd === "chrome kholo"
-      ) {
-        await executeFastAction(
-          () => AiraAccess.openApp("com.android.chrome"),
-          "Chrome open kar diya.",
-          "Chrome nahi khul paya. Accessibility check karo."
-        );
-
+      // Fast path (no API needed)
+      if (cmd === "open chrome" || cmd === "chrome kholo") {
+        userInput.value = '';
+        sendBtn.disabled = true;
+        try {
+          const ok = await AiraAccess.openApp("com.android.chrome");
+          addMessage(ok ? "Chrome open kar diya." : "Chrome nahi khul paya. Accessibility check karo.", false);
+        } catch (e) {
+          addMessage("Chrome open nahi ho paya.", false);
+        }
+        sendBtn.disabled = false;
+        userInput.focus();
         return;
       }
 
-      if (
-        cmd === "go home" ||
-        cmd === "home"
-      ) {
-        await executeFastAction(
-          () => AiraAccess.goHome(),
-          "Home pe le aaya.",
-          "Home nahi ja paya. Accessibility check karo."
-        );
-
+      if (cmd === "go home" || cmd === "home") {
+        userInput.value = '';
+        sendBtn.disabled = true;
+        try {
+          const ok = await AiraAccess.goHome();
+          addMessage(ok ? "Home pe le aaya." : "Home nahi ja paya. Accessibility check karo.", false);
+        } catch (e) {
+          addMessage("Home action nahi chal paya.", false);
+        }
+        sendBtn.disabled = false;
+        userInput.focus();
         return;
       }
 
-      if (
-        cmd === "go back" ||
-        cmd === "back"
-      ) {
-        await executeFastAction(
-          () => AiraAccess.goBack(),
-          "Back kar diya.",
-          "Back nahi ho paya."
-        );
-
+      if (cmd === "go back" || cmd === "back") {
+        userInput.value = '';
+        sendBtn.disabled = true;
+        try {
+          const ok = await AiraAccess.goBack();
+          addMessage(ok ? "Back kar diya." : "Back nahi ho paya.", false);
+        } catch (e) {
+          addMessage("Back action nahi chal paya.", false);
+        }
+        sendBtn.disabled = false;
+        userInput.focus();
         return;
       }
 
-      if (
-        cmd === "open notifications" ||
-        cmd === "notifications"
-      ) {
-        await executeFastAction(
-          () => AiraAccess.openNotifications(),
-          "Notifications open kiye.",
-          "Notifications nahi khul paye."
-        );
-
+      if (cmd === "open notifications" || cmd === "notifications") {
+        userInput.value = '';
+        sendBtn.disabled = true;
+        try {
+          const ok = await AiraAccess.openNotifications();
+          addMessage(ok ? "Notifications open kiye." : "Notifications nahi khul paye.", false);
+        } catch (e) {
+          addMessage("Notifications open nahi ho paye.", false);
+        }
+        sendBtn.disabled = false;
+        userInput.focus();
         return;
       }
 
-      if (
-        cmd === "open recents" ||
-        cmd === "recents"
-      ) {
-        await executeFastAction(
-          () => AiraAccess.openRecents(),
-          "Recents open kiye.",
-          "Recents nahi khul paye."
-        );
-
+      if (cmd === "open recents" || cmd === "recents") {
+        userInput.value = '';
+        sendBtn.disabled = true;
+        try {
+          const ok = await AiraAccess.openRecents();
+          addMessage(ok ? "Recents open kiye." : "Recents nahi khul paye.", false);
+        } catch (e) {
+          addMessage("Recents open nahi ho paye.", false);
+        }
+        sendBtn.disabled = false;
+        userInput.focus();
         return;
       }
 
-      /*
-        NORMAL GEMINI PATH
-      */
-
-      clearInput();
+      // Normal AI path (universal app control via Gemini ACTION)
+      userInput.value = '';
+      userInput.style.height = 'auto';
       sendBtn.disabled = true;
-
       showTyping();
 
-      conversationHistory.push({
-        role: "user",
-        parts: [
-          {
-            text
-          }
-        ]
-      });
+      conversationHistory.push({ role: "user", parts: [{ text }] });
 
-      try {
-        const result = await callGemini();
+      const result = await callGemini(text);
+      hideTyping();
 
-        hideTyping();
-
-        if (result.text) {
-          const originalReply = result.text;
-
-          /*
-            Only accept the supported ACTION formats.
-          */
-
-          const actionRegex =
-            /\[\[ACTION:(OPEN_APP:[^\]\r\n]+|GO_HOME|GO_BACK|OPEN_NOTIFICATIONS|OPEN_RECENTS)\]\]/;
-
-          const actionMatch =
-            originalReply.match(actionRegex);
-
-          let visibleReply = originalReply;
-
-          if (actionMatch) {
-            const action =
-              actionMatch[1].trim();
-
-            visibleReply = visibleReply
-              .replace(actionRegex, "")
-              .trim();
-
-            /*
-              Don't block UI while the Android action runs.
-            */
-            runDeviceAction(action).catch((error) => {
-              console.error(
-                "Action execution error:",
-                error
-              );
-            });
-          }
-
-          addMessage(
-            visibleReply || "OK",
-            false
-          );
-
-          conversationHistory.push({
-            role: "model",
-            parts: [
-              {
-                text: originalReply
-              }
-            ]
-          });
-        } else {
-          /*
-            Remove failed user turn so broken requests
-            don't pollute future conversation context.
-          */
-
-          if (
-            conversationHistory.length > 0 &&
-            conversationHistory[
-              conversationHistory.length - 1
-            ]?.role === "user"
-          ) {
-            conversationHistory.pop();
-          }
-
-          addMessage(
-            "Error: " +
-              (result.error ||
-                "Something went wrong"),
-            false
-          );
+      if (result.text) {
+        let reply = result.text;
+        const actionMatch = reply.match(/\[\[ACTION:([^\]]+)\]\]/);
+        if (actionMatch) {
+          const action = actionMatch[1].trim();
+          reply = reply.replace(/\[\[ACTION:[^\]]+\]\]/g, '').trim();
+          runDeviceAction(action);
         }
-      } catch (error) {
-        hideTyping();
 
-        console.error(
-          "sendMessage failed:",
-          error
-        );
-
-        if (
-          conversationHistory.length > 0 &&
-          conversationHistory[
-            conversationHistory.length - 1
-          ]?.role === "user"
-        ) {
+        addMessage(reply || "OK", false);
+        conversationHistory.push({ role: "model", parts: [{ text: result.text }] });
+      } else {
+        if (conversationHistory[conversationHistory.length - 1]?.role === "user") {
           conversationHistory.pop();
         }
-
-        addMessage(
-          "Error: Request failed.",
-          false
-        );
-      } finally {
-        updateEngineState();
-
-        sendBtn.disabled = false;
-
-        userInput.focus();
+        addMessage("Error: " + (result.error || "Something went wrong"), false);
       }
+
+      updateEngineState();
+      sendBtn.disabled = false;
+      userInput.focus();
     }
 
     sendBtn.onclick = sendMessage;
 
-    userInput.onkeydown = (event) => {
-      if (
-        event.key === "Enter" &&
-        !event.shiftKey
-      ) {
-        event.preventDefault();
+    userInput.onkeydown = (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
         sendMessage();
       }
     };
 
     userInput.oninput = () => {
-      userInput.style.height = "auto";
-
-      userInput.style.height =
-        Math.min(
-          userInput.scrollHeight,
-          120
-        ) + "px";
+      userInput.style.height = 'auto';
+      userInput.style.height = Math.min(userInput.scrollHeight, 120) + 'px';
     };
 
-    document.getElementById("clearChatBtn").onclick = () => {
-      if (confirm("Clear all messages?")) {
-        messagesEl.innerHTML = "";
+    document.getElementById('clearChatBtn').onclick = () => {
+      if (confirm('Clear all messages?')) {
+        messagesEl.innerHTML = '';
         conversationHistory = [];
-
-        addMessage(
-          "Hi, I'm Aira. How can I support you today?",
-          false
-        );
+        addMessage("Hi, I'm Aira. How can I support you today?", false);
       }
     };
 
-    async function initializeAira() {
+    document.addEventListener('DOMContentLoaded', async () => {
       await loadSettings();
-
-      addMessage(
-        "Hi, I'm Aira. How can I support you today?",
-        false
-      );
-
-      userInput.focus();
-    }
-
-    /*
-      In Cordova, deviceready is important for native plugins.
-      DOMContentLoaded is still enough to initialize the UI.
-    */
-
-    document.addEventListener(
-      "DOMContentLoaded",
-      initializeAira
-    );
-
-    document.addEventListener(
-      "deviceready",
-      () => {
-        console.log("Cordova device ready.");
-
-        if (accessibilityAvailable()) {
-          console.log(
-            "Aira accessibility bridge detected."
-          );
-        } else {
-          console.warn(
-            "Aira accessibility bridge not detected."
-          );
-        }
-      },
-      false
-    );
+      addMessage("Hi, I'm Aira. How can I support you today?", false);
+    });
   </script>
 </body>
 </html>
