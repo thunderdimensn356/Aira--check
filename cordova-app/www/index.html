@@ -739,7 +739,7 @@ For normal chat with no device/photo request, do not output any ACTION line.
           const model = modelRotator.getCurrentModel();
 
           try {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/\( {model}:generateContent?key= \){encodeURIComponent(apiKey)}`;
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
             const response = await fetch(url, {
               method: 'POST',
