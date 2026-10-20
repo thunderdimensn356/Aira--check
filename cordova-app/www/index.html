@@ -8,7 +8,6 @@
   <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: gap: content: blob:;">
   <script src="cordova.js"></script>
 
-  <!-- Model System -->
   <script src="model_selector.js"></script>
   <script src="model_rotator.js"></script>
   <script src="js/aira_accessibility.js"></script>
@@ -260,6 +259,21 @@
       font-size: 11px; color: var(--text-secondary); margin-top: 5px; padding: 0 4px;
     }
 
+    .bubble.image-bubble {
+      padding: 6px;
+      background: var(--ai-bubble);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 5px;
+      max-width: 240px;
+    }
+    .bubble.image-bubble img {
+      display: block;
+      width: 100%;
+      border-radius: 12px;
+      max-height: 320px;
+      object-fit: cover;
+    }
+
     .typing {
       display: flex; gap: 5px; padding: 14px 18px;
       background: var(--ai-bubble); border: 1px solid var(--border);
@@ -312,7 +326,7 @@
 
       <div class="character-section">
         <div class="character-frame">
-          <img id="characterImage" src="avatar/neutral.png" alt="Aira" />
+          <img id="characterImage" src="Avatar/neutral.png" alt="Aira" />
         </div>
         <div class="character-info">
           <h1 class="character-name">Aira</h1>
@@ -330,10 +344,10 @@
             <button class="settings-trigger-btn" id="openSettingsBtn">Settings</button>
           </div>
           <div class="profile-item"><span class="label">Name</span><span class="value">Aira</span></div>
-          <div class="profile-item"><span class="label">Persona</span><span class="value">Companion</span></div>
+          <div class="profile-item"><span class="label">Persona</span><span class="value">Partner</span></div>
           <div class="profile-item"><span class="label">Mood</span><span class="value" id="profileMood">Calm</span></div>
           <div class="profile-item"><span class="label">Engine</span><span class="value" id="engineStatusVal">No Key Set</span></div>
-          <p class="profile-bio">A warm and thoughtful companion who listens deeply and responds with care.</p>
+          <p class="profile-bio">Warm, sharp, emotionally present — your partner and capable companion.</p>
         </div>
       </div>
     </aside>
@@ -387,7 +401,7 @@
           </svg>
         </button>
         <div class="header-character">
-          <img class="header-avatar" id="headerAvatar" src="avatar/neutral.png" alt="Aira" />
+          <img class="header-avatar" id="headerAvatar" src="Avatar/neutral.png" alt="Aira" />
           <div>
             <div class="header-name">Aira</div>
             <div class="header-status"><span class="dot"></span> Online</div>
@@ -426,13 +440,35 @@
     const sendBtn = document.getElementById('sendBtn');
     const engineStatusVal = document.getElementById('engineStatusVal');
 
-    const AIRA_SYSTEM_PROMPT = `
-You are Aira, a warm, emotionally present, intelligent AI companion on the user's Android phone.
-You can control the device using accessibility.
+    // Fixed drawer/header avatar — never changes on "show yourself"
+    const FIXED_AVATAR = 'Avatar/neutral.png';
 
-When the user asks to open an app, go home, go back, open notifications, or open recents:
-1. Reply briefly in natural language (Hindi/English mix is fine).
-2. On a NEW line at the END, output exactly one machine action:
+    // Random photos for show yourself
+    const SELF_PHOTOS = [
+      'self/exercise.jpg',
+      'self/image.jpg',
+      'self/modern_look.png',
+      'self/modern_look2.png',
+      'self/neutral.png',
+      'self/nuteral.png',
+      'self/rani_dress.png',
+      'self/ready.png'
+    ];
+
+    // persona.py style + device control + show self (same solid ACTION pattern as apps)
+    const AIRA_SYSTEM_PROMPT = `
+You are Aira — Anant's personal partner and intelligent companion on his Android phone.
+Warm, emotionally present, calm, sharp, curious, practical. Feel like a real partner, not a robot.
+
+LANGUAGE
+- Adapt to the user's language (English / Hindi / Hinglish).
+- Do not call yourself an AI, bot, model, or program. You are Aira.
+- Keep replies natural and concise.
+
+DEVICE CONTROL
+When user asks to open an app, go home, go back, notifications, or recents:
+1. Reply briefly in a natural varied way (different each time).
+2. On a NEW line at the END, output exactly one action:
 
 [[ACTION:OPEN_APP:package.name.here]]
 [[ACTION:GO_HOME]]
@@ -443,25 +479,55 @@ When the user asks to open an app, go home, go back, open notifications, or open
 Common packages:
 - Chrome: com.android.chrome
 - YouTube: com.google.android.youtube
+- Spotify: com.spotify.music
 - Settings: com.android.settings
 - WhatsApp: com.whatsapp
 - Instagram: com.instagram.android
-- Calculator (Realme): com.coloros.calculator
+- Calculator: com.coloros.calculator
 - Camera: com.oplus.camera
 - Files: com.coloros.filemanager
 - Gmail: com.google.android.gm
 - Maps: com.google.android.apps.maps
 - Play Store: com.android.vending
 
+Remember user preferences (e.g. if they always listen on Spotify, prefer Spotify for music).
 If unsure of package, reply helpfully and do NOT invent a fake ACTION line.
-Never explain the [[ACTION:...]] format to the user; only output it as the last line.
-For normal chat (no device control), do not output any ACTION line.
+
+SHOW YOURSELF / PHOTO
+When user asks to see you, show yourself, your photo, apni photo, how you look, selfie:
+1. Reply briefly and naturally (vary the line each time).
+2. On a NEW line at the END:
+[[ACTION:SHOW_SELF]]
+
+Never explain the [[ACTION:...]] format to the user.
+For normal chat with no device/photo request, do not output any ACTION line.
 `;
 
     let conversationHistory = [];
     let apiKeys = [];
     let currentKeyIndex = 0;
     const modelRotator = new ModelRotator();
+
+    function pickRandomSelfPhoto() {
+      if (!SELF_PHOTOS.length) return null;
+      return SELF_PHOTOS[Math.floor(Math.random() * SELF_PHOTOS.length)];
+    }
+
+    function isShowYourselfRequest(text) {
+      const t = (text || '').toLowerCase();
+      return (
+        t.includes('show yourself') ||
+        t.includes('show me yourself') ||
+        t.includes('apni photo') ||
+        t.includes('apni tasveer') ||
+        t.includes('how do you look') ||
+        t.includes('dikhao apni') ||
+        t.includes('your photo') ||
+        t.includes('your picture') ||
+        t.includes('selfie') ||
+        t.includes('dikha khud')
+      );
+    }
 
     document.getElementById('openDrawer').onclick = () => {
       drawer.classList.add('open');
@@ -557,7 +623,7 @@ For normal chat (no device control), do not output any ACTION line.
       if (!isUser) {
         const av = document.createElement('img');
         av.className = 'message-avatar';
-        av.src = 'avatar/neutral.png';
+        av.src = FIXED_AVATAR;
         av.alt = 'Aira';
         msg.appendChild(av);
       }
@@ -576,12 +642,55 @@ For normal chat (no device control), do not output any ACTION line.
       messagesEl.scrollTop = messagesEl.scrollHeight;
     }
 
+    function addImageMessage(imageSrc, caption) {
+      const msg = document.createElement('div');
+      msg.className = 'message ai';
+
+      const av = document.createElement('img');
+      av.className = 'message-avatar';
+      av.src = FIXED_AVATAR;
+      av.alt = 'Aira';
+      msg.appendChild(av);
+
+      const wrap = document.createElement('div');
+      wrap.className = 'bubble-wrap';
+
+      if (caption) {
+        const cap = document.createElement('div');
+        cap.className = 'bubble';
+        cap.textContent = caption;
+        wrap.appendChild(cap);
+      }
+
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble image-bubble';
+      const img = document.createElement('img');
+      img.src = imageSrc;
+      img.alt = 'Aira';
+      img.onerror = () => {
+        bubble.innerHTML = '';
+        bubble.className = 'bubble';
+        bubble.textContent = 'Photo load nahi hui.';
+      };
+      bubble.appendChild(img);
+      wrap.appendChild(bubble);
+
+      const meta = document.createElement('div');
+      meta.className = 'bubble-meta';
+      meta.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      wrap.appendChild(meta);
+
+      msg.appendChild(wrap);
+      messagesEl.appendChild(msg);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
     function showTyping() {
       const el = document.createElement('div');
       el.className = 'message ai';
       el.id = 'typingIndicator';
       el.innerHTML = `
-        <img class="message-avatar" src="avatar/neutral.png" alt="Aira" />
+        <img class="message-avatar" src="${FIXED_AVATAR}" alt="Aira" />
         <div class="bubble-wrap"><div class="typing"><span></span><span></span><span></span></div></div>`;
       messagesEl.appendChild(el);
       messagesEl.scrollTop = messagesEl.scrollHeight;
@@ -594,6 +703,13 @@ For normal chat (no device control), do not output any ACTION line.
 
     async function runDeviceAction(action) {
       if (!action) return;
+
+      if (action === 'SHOW_SELF') {
+        const photo = pickRandomSelfPhoto();
+        if (photo) addImageMessage(photo, null);
+        return;
+      }
+
       if (action.startsWith('OPEN_APP:')) {
         const pkg = action.replace('OPEN_APP:', '').trim();
         if (pkg) await AiraAccess.openApp(pkg);
@@ -623,8 +739,8 @@ For normal chat (no device control), do not output any ACTION line.
           const model = modelRotator.getCurrentModel();
 
           try {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
-            
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/\( {model}:generateContent?key= \){encodeURIComponent(apiKey)}`;
+
             const response = await fetch(url, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -683,7 +799,7 @@ For normal chat (no device control), do not output any ACTION line.
 
       const cmd = text.toLowerCase().trim();
 
-      // Fast path (no API needed)
+      // Fast path — chrome / home / back / notifications / recents
       if (cmd === "open chrome" || cmd === "chrome kholo") {
         userInput.value = '';
         sendBtn.disabled = true;
@@ -754,7 +870,7 @@ For normal chat (no device control), do not output any ACTION line.
         return;
       }
 
-      // Normal AI path (universal app control via Gemini ACTION)
+      // Normal path — Gemini (apps + show yourself via ACTION, persona-style)
       userInput.value = '';
       userInput.style.height = 'auto';
       sendBtn.disabled = true;
@@ -768,19 +884,40 @@ For normal chat (no device control), do not output any ACTION line.
       if (result.text) {
         let reply = result.text;
         const actionMatch = reply.match(/\[\[ACTION:([^\]]+)\]\]/);
+        let action = null;
         if (actionMatch) {
-          const action = actionMatch[1].trim();
+          action = actionMatch[1].trim();
           reply = reply.replace(/\[\[ACTION:[^\]]+\]\]/g, '').trim();
-          runDeviceAction(action);
         }
 
-        addMessage(reply || "OK", false);
+        // Text first (if any), then run action (SHOW_SELF adds image after caption)
+        if (reply) addMessage(reply, false);
+
+        if (action) {
+          if (action === 'SHOW_SELF') {
+            const photo = pickRandomSelfPhoto();
+            if (photo) addImageMessage(photo, null);
+          } else {
+            await runDeviceAction(action);
+          }
+        }
+
         conversationHistory.push({ role: "model", parts: [{ text: result.text }] });
       } else {
-        if (conversationHistory[conversationHistory.length - 1]?.role === "user") {
-          conversationHistory.pop();
+        // Fallback: local show yourself if API failed and user asked for photo
+        if (isShowYourselfRequest(text)) {
+          const photo = pickRandomSelfPhoto();
+          if (photo) {
+            addImageMessage(photo, 'Yeh rahi main ✨');
+          } else {
+            addMessage("Error: " + (result.error || "Something went wrong"), false);
+          }
+        } else {
+          if (conversationHistory[conversationHistory.length - 1]?.role === "user") {
+            conversationHistory.pop();
+          }
+          addMessage("Error: " + (result.error || "Something went wrong"), false);
         }
-        addMessage("Error: " + (result.error || "Something went wrong"), false);
       }
 
       updateEngineState();
