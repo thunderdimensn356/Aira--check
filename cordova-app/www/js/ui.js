@@ -1,12 +1,13 @@
 /**
  * ui.js
- * Drawer, settings, messages, image bubbles, fullscreen viewer
+ * Drawer, settings, messages, image viewer, terminal view
  */
 
 const AiraUI = {
   FIXED_AVATAR: 'Avatar/neutral.png',
 
   els: {},
+  term: {},
 
   init() {
     this.els = {
@@ -21,9 +22,24 @@ const AiraUI = {
       cfgApiKeys: document.getElementById('cfgApiKeys')
     };
 
+    this.term = {
+      view: document.getElementById('terminalView'),
+      scroll: document.getElementById('termScroll'),
+      input: document.getElementById('termInput'),
+      runBtn: document.getElementById('termRunBtn'),
+      cpu: document.getElementById('termCpu'),
+      ram: document.getElementById('termRam'),
+      disk: document.getElementById('termDisk'),
+      task: document.getElementById('termTask'),
+      fill: document.getElementById('termProgressFill'),
+      openBtn: document.getElementById('openTerminalBtn'),
+      closeBtn: document.getElementById('closeTerminalBtn')
+    };
+
     this.bindDrawer();
     this.bindSettings();
     this.bindInput();
+    this.bindTerminal();
     this.ensureImageViewer();
   },
 
@@ -75,6 +91,119 @@ const AiraUI = {
       userInput.style.height = 'auto';
       userInput.style.height = Math.min(userInput.scrollHeight, 120) + 'px';
     };
+  },
+
+  bindTerminal() {
+    const t = this.term;
+    if (!t.view) return;
+
+    if (t.openBtn) {
+      t.openBtn.onclick = () => this.openTerminal();
+    }
+    if (t.closeBtn) {
+      t.closeBtn.onclick = () => this.closeTerminal();
+    }
+
+    if (t.runBtn) {
+      t.runBtn.onclick = () => this.onTerminalRun();
+    }
+    if (t.input) {
+      t.input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          this.onTerminalRun();
+        }
+      });
+    }
+  },
+
+  openTerminal() {
+    if (!this.term.view) return;
+    this.term.view.classList.add('open');
+    if (this.term.openBtn) this.term.openBtn.classList.add('term-active');
+    if (this.term.input) this.term.input.focus();
+  },
+
+  closeTerminal() {
+    if (!this.term.view) return;
+    this.term.view.classList.remove('open');
+    if (this.term.openBtn) this.term.openBtn.classList.remove('term-active');
+  },
+
+  termWrite(text, kind) {
+    if (!this.term.scroll) return;
+    const line = document.createElement('div');
+    line.className = 'term-line';
+
+    if (kind === 'cmd') {
+      line.innerHTML = `<span class="meta">$</span> <span class="cmd"></span>`;
+      line.querySelector('.cmd').textContent = text;
+    } else if (kind === 'ok') {
+      line.innerHTML = `<span class="ok"></span>`;
+      line.querySelector('.ok').textContent = text;
+    } else if (kind === 'err') {
+      line.innerHTML = `<span class="err"></span>`;
+      line.querySelector('.err').textContent = text;
+    } else if (kind === 'meta') {
+      line.innerHTML = `<span class="meta"></span>`;
+      line.querySelector('.meta').textContent = text;
+    } else {
+      line.textContent = text;
+    }
+
+    this.term.scroll.appendChild(line);
+    this.term.scroll.scrollTop = this.term.scroll.scrollHeight;
+  },
+
+  termClear() {
+    if (!this.term.scroll) return;
+    this.term.scroll.innerHTML = '';
+    this.termWrite('# Aira · Termux bridge', 'meta');
+    this.termWrite('# Session ready', 'meta');
+    this.termWrite(' ');
+    this.setTermProgress(0, 'Ready');
+  },
+
+  setTermProgress(pct, label) {
+    if (this.term.fill) {
+      this.term.fill.style.width = Math.max(0, Math.min(100, pct)) + '%';
+    }
+    if (label && this.term.task) {
+      this.term.task.textContent = label;
+    }
+  },
+
+  setTermStats(cpu, ram, disk) {
+    if (cpu != null && this.term.cpu) this.term.cpu.textContent = cpu;
+    if (ram != null && this.term.ram) this.term.ram.textContent = ram;
+    if (disk != null && this.term.disk) this.term.disk.textContent = disk;
+  },
+
+  onTerminalRun() {
+    const input = this.term.input;
+    if (!input) return;
+    const cmd = input.value.trim();
+    if (!cmd) return;
+
+    this.termWrite(cmd, 'cmd');
+    this.setTermProgress(20, 'Running…');
+
+    // Preview only — real Termux bridge later
+    setTimeout(() => this.setTermProgress(60, 'Running…'), 200);
+    setTimeout(() => {
+      this.termWrite('// Termux bridge not connected yet', 'meta');
+      this.termWrite(' ');
+      this.setTermProgress(100, 'Done');
+      setTimeout(() => this.setTermProgress(0, 'Ready'), 700);
+    }, 600);
+
+    input.value = '';
+    input.focus();
+
+    // Hook for future: window.AiraChat / AiraAccess.runTermux(cmd)
+    if (window.AiraChat && typeof window.AiraChat.onTerminalCommand === 'function') {
+      window.AiraChat.onTerminalCommand(cmd);
+    }
   },
 
   setEngineStatus(text, ok) {
