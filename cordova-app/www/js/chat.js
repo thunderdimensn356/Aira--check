@@ -1,6 +1,6 @@
 /**
  * chat.js
- * Gemini engine, API keys, device actions, show yourself
+ * Gemini engine, API keys, device actions, show yourself, terminal open
  * Depends on: persona.js, ui.js, model_rotator.js, aira_accessibility.js
  */
 
@@ -151,6 +151,11 @@ const AiraChat = {
       return;
     }
 
+    if (action === 'OPEN_TERMINAL') {
+      AiraUI.openTerminal();
+      return;
+    }
+
     if (action.startsWith('OPEN_APP:')) {
       const pkg = action.replace('OPEN_APP:', '').trim();
       if (pkg) await AiraAccess.openApp(pkg);
@@ -197,7 +202,7 @@ const AiraChat = {
 
         try {
           const url =
-            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
+            `https://generativelanguage.googleapis.com/v1beta/models/\( {model}:generateContent?key= \){encodeURIComponent(apiKey)}`;
 
           const response = await fetch(url, {
             method: 'POST',
@@ -302,6 +307,21 @@ const AiraChat = {
   async handleFastPath(cmd) {
     const input = AiraUI.els.userInput;
     const btn = AiraUI.els.sendBtn;
+
+    // Terminal open (UI)
+    if (
+      cmd === 'open terminal' ||
+      cmd === 'terminal kholo' ||
+      cmd === 'terminal open' ||
+      cmd === 'terminal' ||
+      cmd === 'shell kholo' ||
+      cmd === 'termux kholo'
+    ) {
+      input.value = '';
+      AiraUI.openTerminal();
+      AiraUI.addMessage('Terminal open kar diya.', false);
+      return true;
+    }
 
     if (cmd === 'open chrome' || cmd === 'chrome kholo') {
       input.value = '';
@@ -455,10 +475,9 @@ const AiraChat = {
       if (action) {
         if (action === 'SHOW_SELF') {
           const photo = this.pickRandomSelfPhoto();
-
-          if (photo) {
-            AiraUI.addImageMessage(photo, null);
-          }
+          if (photo) AiraUI.addImageMessage(photo, null);
+        } else if (action === 'OPEN_TERMINAL') {
+          AiraUI.openTerminal();
         } else {
           await this.runDeviceAction(action);
         }
