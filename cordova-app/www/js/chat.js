@@ -202,8 +202,8 @@ const AiraChat = {
 
         try {
           const url =
-            `https://generativelanguage.googleapis.com/v1beta/models/\( {model}:generateContent?key= \){encodeURIComponent(apiKey)}`;
-
+            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
+       
           const response = await fetch(url, {
             method: 'POST',
             headers: {
