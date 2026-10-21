@@ -192,7 +192,14 @@ const AiraChat = {
     }
 
     const totalKeys = this.apiKeys.length;
-    const totalModels = this.modelRotator.count() || 8;
+    const totalModels = (this.modelRotator.count && this.modelRotator.count()) || 8;
+    let lastDetailedError = '';
+
+    console.log(
+      '[AiraChat] keys=', totalKeys,
+      'model=', this.modelRotator.getCurrentModel && this.modelRotator.getCurrentModel(),
+      'count=', totalModels
+    );
 
     for (let keyAttempt = 0; keyAttempt < totalKeys; keyAttempt++) {
       const apiKey = this.apiKeys[this.currentKeyIndex];
@@ -202,8 +209,8 @@ const AiraChat = {
 
         try {
           const url =
-            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
-       
+            `https://generativelanguage.googleapis.com/v1beta/models/\( {model}:generateContent?key= \){encodeURIComponent(apiKey)}`;
+
           const response = await fetch(url, {
             method: 'POST',
             headers: {
@@ -239,6 +246,7 @@ const AiraChat = {
           }
 
           const errMsg = data?.error?.message || `HTTP ${response.status}`;
+          lastDetailedError = errMsg;
 
           console.warn(
             `Gemini error | key ${this.currentKeyIndex + 1} | model ${model}:`,
@@ -288,8 +296,16 @@ const AiraChat = {
             }
           }
 
-          return { error: errMsg };
+          return {
+            error:
+              errMsg +
+              ' | model=' +
+              (model || '?') +
+              ' | keys=' +
+              totalKeys
+          };
         } catch (err) {
+          lastDetailedError = err.message || String(err);
           console.error(`Request failed for model ${model}:`, err);
           this.modelRotator.next();
         }
@@ -299,8 +315,18 @@ const AiraChat = {
       this.modelRotator.reset();
     }
 
+    const lastModel =
+      this.modelRotator && this.modelRotator.getCurrentModel
+        ? this.modelRotator.getCurrentModel()
+        : '?';
+
     return {
-      error: 'All API keys and models failed. Please try again later.'
+      error:
+        (lastDetailedError || 'All API keys and models failed') +
+        ' | model=' +
+        lastModel +
+        ' | keys=' +
+        totalKeys
     };
   },
 
@@ -308,14 +334,17 @@ const AiraChat = {
     const input = AiraUI.els.userInput;
     const btn = AiraUI.els.sendBtn;
 
-    // Terminal open (UI)
+    // Terminal open (UI) — flexible
     if (
-      cmd === 'open terminal' ||
-      cmd === 'terminal kholo' ||
-      cmd === 'terminal open' ||
       cmd === 'terminal' ||
+      cmd === 'open terminal' ||
+      cmd === 'terminal open' ||
+      cmd === 'terminal kholo' ||
+      cmd === 'terminal open karo' ||
       cmd === 'shell kholo' ||
-      cmd === 'termux kholo'
+      cmd === 'termux kholo' ||
+      (cmd.includes('terminal') && (cmd.includes('open') || cmd.includes('khol'))) ||
+      (cmd.includes('shell') && (cmd.includes('open') || cmd.includes('khol')))
     ) {
       input.value = '';
       AiraUI.openTerminal();
