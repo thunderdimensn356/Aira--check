@@ -192,14 +192,7 @@ const AiraChat = {
     }
 
     const totalKeys = this.apiKeys.length;
-    const totalModels = (this.modelRotator.count && this.modelRotator.count()) || 8;
-    let lastDetailedError = '';
-
-    console.log(
-      '[AiraChat] keys=', totalKeys,
-      'model=', this.modelRotator.getCurrentModel && this.modelRotator.getCurrentModel(),
-      'count=', totalModels
-    );
+    const totalModels = this.modelRotator.count() || 8;
 
     for (let keyAttempt = 0; keyAttempt < totalKeys; keyAttempt++) {
       const apiKey = this.apiKeys[this.currentKeyIndex];
@@ -246,7 +239,6 @@ const AiraChat = {
           }
 
           const errMsg = data?.error?.message || `HTTP ${response.status}`;
-          lastDetailedError = errMsg;
 
           console.warn(
             `Gemini error | key ${this.currentKeyIndex + 1} | model ${model}:`,
@@ -296,16 +288,8 @@ const AiraChat = {
             }
           }
 
-          return {
-            error:
-              errMsg +
-              ' | model=' +
-              (model || '?') +
-              ' | keys=' +
-              totalKeys
-          };
+          return { error: errMsg };
         } catch (err) {
-          lastDetailedError = err.message || String(err);
           console.error(`Request failed for model ${model}:`, err);
           this.modelRotator.next();
         }
@@ -315,18 +299,8 @@ const AiraChat = {
       this.modelRotator.reset();
     }
 
-    const lastModel =
-      this.modelRotator && this.modelRotator.getCurrentModel
-        ? this.modelRotator.getCurrentModel()
-        : '?';
-
     return {
-      error:
-        (lastDetailedError || 'All API keys and models failed') +
-        ' | model=' +
-        lastModel +
-        ' | keys=' +
-        totalKeys
+      error: 'All API keys and models failed. Please try again later.'
     };
   },
 
@@ -334,17 +308,14 @@ const AiraChat = {
     const input = AiraUI.els.userInput;
     const btn = AiraUI.els.sendBtn;
 
-    // Terminal open (UI) — flexible
+    // Terminal open (UI)
     if (
-      cmd === 'terminal' ||
       cmd === 'open terminal' ||
-      cmd === 'terminal open' ||
       cmd === 'terminal kholo' ||
-      cmd === 'terminal open karo' ||
+      cmd === 'terminal open' ||
+      cmd === 'terminal' ||
       cmd === 'shell kholo' ||
-      cmd === 'termux kholo' ||
-      (cmd.includes('terminal') && (cmd.includes('open') || cmd.includes('khol'))) ||
-      (cmd.includes('shell') && (cmd.includes('open') || cmd.includes('khol')))
+      cmd === 'termux kholo'
     ) {
       input.value = '';
       AiraUI.openTerminal();
