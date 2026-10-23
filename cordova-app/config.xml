@@ -10,13 +10,4 @@
     <content src="index.html" />
     <allow-intent href="http://*/*" />
     <allow-intent href="https://*/*" />
-
-    <!-- Android: allow app to see Termux for RUN_COMMAND bridge -->
-    <platform name="android">
-        <config-file parent="/*" target="AndroidManifest.xml">
-            <queries>
-                <package android:name="com.termux" />
-            </queries>
-        </config-file>
-    </platform>
 </widget>
