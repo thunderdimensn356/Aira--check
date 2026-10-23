@@ -56,6 +56,11 @@ jobs:
             echo "Copied MainActivity.java"
           fi
 
+          if [ -f native/java/TermuxBridge.java ]; then
+            cp native/java/TermuxBridge.java platforms/android/app/src/main/java/com/aira/app/
+            echo "Copied TermuxBridge.java"
+          fi
+
           # XML service config
           if [ -f native/xml/aira_accessibility_service.xml ]; then
             cp native/xml/aira_accessibility_service.xml platforms/android/app/src/main/res/xml/
