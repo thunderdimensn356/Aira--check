@@ -2,7 +2,7 @@
 <widget id="com.aira.app" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
     <name>Aira</name>
     <description>
-        A sample Apache Cordova application that responds to the deviceready event.
+        Aira — personal companion on Android.
     </description>
     <author email="dev@cordova.apache.org" href="https://cordova.apache.org">
         Apache Cordova Team
@@ -10,4 +10,13 @@
     <content src="index.html" />
     <allow-intent href="http://*/*" />
     <allow-intent href="https://*/*" />
+
+    <!-- Android: allow app to see Termux for RUN_COMMAND bridge -->
+    <platform name="android">
+        <config-file parent="/*" target="AndroidManifest.xml">
+            <queries>
+                <package android:name="com.termux" />
+            </queries>
+        </config-file>
+    </platform>
 </widget>
