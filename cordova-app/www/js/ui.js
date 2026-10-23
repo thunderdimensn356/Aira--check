@@ -179,181 +179,44 @@ const AiraUI = {
     if (disk != null && this.term.disk) this.term.disk.textContent = disk;
   },
 
-  onTerminalRun() {
+  async onTerminalRun() {
     const input = this.term.input;
     if (!input) return;
     const cmd = input.value.trim();
     if (!cmd) return;
 
     this.termWrite(cmd, 'cmd');
-    this.setTermProgress(20, 'Running…');
-
-    // Preview only — real Termux bridge later
-    setTimeout(() => this.setTermProgress(60, 'Running…'), 200);
-    setTimeout(() => {
-      this.termWrite('// Termux bridge not connected yet', 'meta');
-      this.termWrite(' ');
-      this.setTermProgress(100, 'Done');
-      setTimeout(() => this.setTermProgress(0, 'Ready'), 700);
-    }, 600);
-
+    this.setTermProgress(15, 'Running…');
     input.value = '';
+
+    if (!window.AiraTermuxBridge || typeof window.AiraTermuxBridge.run !== 'function') {
+      this.termWrite('Termux bridge JS missing', 'err');
+      this.setTermProgress(0, 'Error');
+      input.focus();
+      return;
+    }
+
+    this.setTermProgress(40, 'Termux…');
+    const result = await window.AiraTermuxBridge.run(cmd);
+
+    if (result.ok) {
+      this.setTermProgress(90, 'Done');
+      const text = result.output != null ? String(result.output) : '';
+      if (!text.trim()) {
+        this.termWrite('(no output)', 'meta');
+      } else {
+        text.split('\n').forEach((line) => {
+          this.termWrite(line, 'ok');
+        });
+      }
+      this.setTermProgress(100, 'Done');
+    } else {
+      this.termWrite(result.error || 'failed', 'err');
+      this.setTermProgress(0, 'Error');
+    }
+
+    setTimeout(() => this.setTermProgress(0, 'Ready'), 900);
     input.focus();
-
-    // Hook for future: window.AiraChat / AiraAccess.runTermux(cmd)
-    if (window.AiraChat && typeof window.AiraChat.onTerminalCommand === 'function') {
-      window.AiraChat.onTerminalCommand(cmd);
-    }
   },
 
-  setEngineStatus(text, ok) {
-    const el = this.els.engineStatusVal;
-    if (!el) return;
-    el.textContent = text;
-    el.style.color = ok ? '#34d399' : 'var(--text-secondary)';
-  },
-
-  setCompanionName(name) {
-    document.querySelectorAll('.character-name, .header-name').forEach(el => {
-      el.textContent = name;
-    });
-  },
-
-  addMessage(text, isUser = false) {
-    const msg = document.createElement('div');
-    msg.className = 'message ' + (isUser ? 'user' : 'ai');
-
-    if (!isUser) {
-      const av = document.createElement('img');
-      av.className = 'message-avatar';
-      av.src = this.FIXED_AVATAR;
-      av.alt = 'Aira';
-      msg.appendChild(av);
-    }
-
-    const wrap = document.createElement('div');
-    wrap.className = 'bubble-wrap';
-
-    const bubble = document.createElement('div');
-    bubble.className = 'bubble';
-    bubble.textContent = text;
-    wrap.appendChild(bubble);
-
-    const meta = document.createElement('div');
-    meta.className = 'bubble-meta';
-    meta.textContent = new Date().toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-    wrap.appendChild(meta);
-
-    msg.appendChild(wrap);
-    this.els.messages.appendChild(msg);
-    this.els.messages.scrollTop = this.els.messages.scrollHeight;
-  },
-
-  addImageMessage(imageSrc, caption) {
-    const msg = document.createElement('div');
-    msg.className = 'message ai';
-
-    const av = document.createElement('img');
-    av.className = 'message-avatar';
-    av.src = this.FIXED_AVATAR;
-    av.alt = 'Aira';
-    msg.appendChild(av);
-
-    const wrap = document.createElement('div');
-    wrap.className = 'bubble-wrap';
-
-    if (caption) {
-      const cap = document.createElement('div');
-      cap.className = 'bubble';
-      cap.textContent = caption;
-      wrap.appendChild(cap);
-    }
-
-    const bubble = document.createElement('div');
-    bubble.className = 'bubble image-bubble';
-
-    const img = document.createElement('img');
-    img.src = imageSrc;
-    img.alt = 'Aira';
-    img.onclick = () => this.openImageViewer(imageSrc);
-    img.onerror = () => {
-      bubble.innerHTML = '';
-      bubble.className = 'bubble';
-      bubble.textContent = 'Photo load nahi hui.';
-    };
-
-    bubble.appendChild(img);
-    wrap.appendChild(bubble);
-
-    const meta = document.createElement('div');
-    meta.className = 'bubble-meta';
-    meta.textContent = new Date().toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-    wrap.appendChild(meta);
-
-    msg.appendChild(wrap);
-    this.els.messages.appendChild(msg);
-    this.els.messages.scrollTop = this.els.messages.scrollHeight;
-  },
-
-  showTyping() {
-    const el = document.createElement('div');
-    el.className = 'message ai';
-    el.id = 'typingIndicator';
-    el.innerHTML = `
-      <img class="message-avatar" src="${this.FIXED_AVATAR}" alt="Aira" />
-      <div class="bubble-wrap">
-        <div class="typing"><span></span><span></span><span></span></div>
-      </div>`;
-    this.els.messages.appendChild(el);
-    this.els.messages.scrollTop = this.els.messages.scrollHeight;
-  },
-
-  hideTyping() {
-    const t = document.getElementById('typingIndicator');
-    if (t) t.remove();
-  },
-
-  clearMessages() {
-    this.els.messages.innerHTML = '';
-  },
-
-  ensureImageViewer() {
-    if (document.getElementById('imageViewer')) return;
-
-    const viewer = document.createElement('div');
-    viewer.id = 'imageViewer';
-    viewer.className = 'image-viewer';
-    viewer.innerHTML = `
-      <button class="viewer-close" type="button" aria-label="Close">×</button>
-      <img id="imageViewerImg" src="" alt="Full" />
-    `;
-    document.body.appendChild(viewer);
-
-    viewer.querySelector('.viewer-close').onclick = () => this.closeImageViewer();
-    viewer.onclick = (e) => {
-      if (e.target === viewer) this.closeImageViewer();
-    };
-  },
-
-  openImageViewer(src) {
-    const viewer = document.getElementById('imageViewer');
-    const img = document.getElementById('imageViewerImg');
-    if (!viewer || !img) return;
-    img.src = src;
-    img.style.transform = 'scale(1)';
-    viewer.classList.add('active');
-  },
-
-  closeImageViewer() {
-    const viewer = document.getElementById('imageViewer');
-    if (viewer) viewer.classList.remove('active');
-  }
-};
-
-window.AiraUI = AiraUI;
+  setEngine
