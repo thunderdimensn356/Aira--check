@@ -1,4 +1,4 @@
-package com.aira.companion;
+package com.aira.app;
 
 import android.content.Context;
 import android.content.Intent;
