@@ -84,6 +84,16 @@ jobs:
             echo "Added Accessibility Service to AndroidManifest"
           fi
 
+          # Allow querying Termux package (RUN_COMMAND bridge)
+          if [ -f "$MANIFEST" ] && ! grep -q 'android:name="com.termux"' "$MANIFEST"; then
+            if grep -q '<queries>' "$MANIFEST"; then
+              sed -i 's|<queries>|<queries>\n        <package android:name="com.termux" />|' "$MANIFEST"
+            else
+              sed -i 's|<application|<queries>\n        <package android:name="com.termux" />\n    </queries>\n    <application|' "$MANIFEST"
+            fi
+            echo "Added Termux package to queries in AndroidManifest"
+          fi
+
       - name: Build Debug APK
         run: |
           cd cordova-app
