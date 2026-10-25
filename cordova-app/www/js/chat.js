@@ -1,7 +1,7 @@
 /**
  * chat.js
  * Gemini engine, API keys, device actions, show yourself, terminal open
- * Depends on: persona.js, ui.js, model_rotator.js, aira_accessibility.js
+ * Depends on: persona.js, ui.js, model_rotator.js, aira_accessibility.js, voice.js
  */
 
 const AiraChat = {
@@ -40,6 +40,12 @@ const AiraChat = {
     this.loadSettings().then(() => {
       AiraUI.addMessage("Hi, I'm Aira. How can I support you today?", false);
     });
+  },
+
+  speak(text) {
+    if (window.AiraVoice && typeof AiraVoice.speak === 'function') {
+      AiraVoice.speak(text);
+    }
   },
 
   pickRandomSelfPhoto() {
@@ -203,6 +209,7 @@ const AiraChat = {
         try {
           const url =
             `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
+
           const response = await fetch(url, {
             method: 'POST',
             headers: {
@@ -307,7 +314,6 @@ const AiraChat = {
     const input = AiraUI.els.userInput;
     const btn = AiraUI.els.sendBtn;
 
-    // Terminal open (UI)
     if (
       cmd === 'open terminal' ||
       cmd === 'terminal kholo' ||
@@ -318,7 +324,9 @@ const AiraChat = {
     ) {
       input.value = '';
       AiraUI.openTerminal();
-      AiraUI.addMessage('Terminal open kar diya.', false);
+      const msg = 'Terminal open kar diya.';
+      AiraUI.addMessage(msg, false);
+      this.speak(msg);
       return true;
     }
 
@@ -328,14 +336,15 @@ const AiraChat = {
 
       try {
         const ok = await AiraAccess.openApp('com.android.chrome');
-        AiraUI.addMessage(
-          ok
-            ? 'Chrome open kar diya.'
-            : 'Chrome nahi khul paya. Accessibility check karo.',
-          false
-        );
+        const msg = ok
+          ? 'Chrome open kar diya.'
+          : 'Chrome nahi khul paya. Accessibility check karo.';
+        AiraUI.addMessage(msg, false);
+        this.speak(msg);
       } catch (e) {
-        AiraUI.addMessage('Chrome open nahi ho paya.', false);
+        const msg = 'Chrome open nahi ho paya.';
+        AiraUI.addMessage(msg, false);
+        this.speak(msg);
       }
 
       btn.disabled = false;
@@ -349,14 +358,15 @@ const AiraChat = {
 
       try {
         const ok = await AiraAccess.goHome();
-        AiraUI.addMessage(
-          ok
-            ? 'Home pe le aayi.'
-            : 'Home nahi ja payi. Accessibility check karo.',
-          false
-        );
+        const msg = ok
+          ? 'Home pe le aayi.'
+          : 'Home nahi ja payi. Accessibility check karo.';
+        AiraUI.addMessage(msg, false);
+        this.speak(msg);
       } catch (e) {
-        AiraUI.addMessage('Home action nahi chal paya.', false);
+        const msg = 'Home action nahi chal paya.';
+        AiraUI.addMessage(msg, false);
+        this.speak(msg);
       }
 
       btn.disabled = false;
@@ -370,12 +380,13 @@ const AiraChat = {
 
       try {
         const ok = await AiraAccess.goBack();
-        AiraUI.addMessage(
-          ok ? 'Back kar diya.' : 'Back nahi ho paya.',
-          false
-        );
+        const msg = ok ? 'Back kar diya.' : 'Back nahi ho paya.';
+        AiraUI.addMessage(msg, false);
+        this.speak(msg);
       } catch (e) {
-        AiraUI.addMessage('Back action nahi chal paya.', false);
+        const msg = 'Back action nahi chal paya.';
+        AiraUI.addMessage(msg, false);
+        this.speak(msg);
       }
 
       btn.disabled = false;
@@ -389,14 +400,15 @@ const AiraChat = {
 
       try {
         const ok = await AiraAccess.openNotifications();
-        AiraUI.addMessage(
-          ok
-            ? 'Notifications open kiye.'
-            : 'Notifications nahi khul paye.',
-          false
-        );
+        const msg = ok
+          ? 'Notifications open kiye.'
+          : 'Notifications nahi khul paye.';
+        AiraUI.addMessage(msg, false);
+        this.speak(msg);
       } catch (e) {
-        AiraUI.addMessage('Notifications open nahi ho paye.', false);
+        const msg = 'Notifications open nahi ho paye.';
+        AiraUI.addMessage(msg, false);
+        this.speak(msg);
       }
 
       btn.disabled = false;
@@ -410,14 +422,15 @@ const AiraChat = {
 
       try {
         const ok = await AiraAccess.openRecents();
-        AiraUI.addMessage(
-          ok
-            ? 'Recents open kiye.'
-            : 'Recents nahi khul paye.',
-          false
-        );
+        const msg = ok
+          ? 'Recents open kiye.'
+          : 'Recents nahi khul paye.';
+        AiraUI.addMessage(msg, false);
+        this.speak(msg);
       } catch (e) {
-        AiraUI.addMessage('Recents open nahi ho paye.', false);
+        const msg = 'Recents open nahi ho paye.';
+        AiraUI.addMessage(msg, false);
+        this.speak(msg);
       }
 
       btn.disabled = false;
@@ -469,6 +482,7 @@ const AiraChat = {
 
       if (reply) {
         AiraUI.addMessage(reply, false);
+        this.speak(reply);
       }
 
       if (action) {
@@ -491,7 +505,9 @@ const AiraChat = {
         const photo = this.pickRandomSelfPhoto();
 
         if (photo) {
-          AiraUI.addImageMessage(photo, this.pickRandomCaption());
+          const cap = this.pickRandomCaption();
+          AiraUI.addImageMessage(photo, cap);
+          this.speak(cap);
         } else {
           AiraUI.addMessage(
             'Error: ' + (result.error || 'Something went wrong'),
