@@ -194,11 +194,23 @@ display: flex; align-items: center; gap: 5px;
 .header-status .dot {
 width: 6px; height: 6px; border-radius: 50%; background: #34d399;
 }
-.header-actions { margin-left: auto; }
+.header-actions {
+margin-left: auto;
+display: flex;
+align-items: center;
+gap: 8px;
+}
 .icon-btn {
 width: 36px; height: 36px; border-radius: 10px;
 border: 1px solid var(--border); background: transparent;
 color: var(--text-secondary); display: grid; place-items: center; cursor: pointer;
+}
+
+/* Voice toggle ON */
+#voiceToggleBtn.active {
+color: #a78bfa;
+background: rgba(167, 139, 250, 0.15);
+border-color: rgba(167, 139, 250, 0.35);
 }
 
 .messages {
