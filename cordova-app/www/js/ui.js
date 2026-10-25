@@ -136,16 +136,16 @@ const AiraUI = {
     line.className = 'term-line';
 
     if (kind === 'cmd') {
-      line.innerHTML = `<span class="meta">$</span> <span class="cmd"></span>`;
+      line.innerHTML = '<span class="meta">$</span> <span class="cmd"></span>';
       line.querySelector('.cmd').textContent = text;
     } else if (kind === 'ok') {
-      line.innerHTML = `<span class="ok"></span>`;
+      line.innerHTML = '<span class="ok"></span>';
       line.querySelector('.ok').textContent = text;
     } else if (kind === 'err') {
-      line.innerHTML = `<span class="err"></span>`;
+      line.innerHTML = '<span class="err"></span>';
       line.querySelector('.err').textContent = text;
     } else if (kind === 'meta') {
-      line.innerHTML = `<span class="meta"></span>`;
+      line.innerHTML = '<span class="meta"></span>';
       line.querySelector('.meta').textContent = text;
     } else {
       line.textContent = text;
@@ -158,7 +158,7 @@ const AiraUI = {
   termClear() {
     if (!this.term.scroll) return;
     this.term.scroll.innerHTML = '';
-    this.termWrite('# Aira · Termux bridge', 'meta');
+    this.termWrite('# Aira terminal', 'meta');
     this.termWrite('# Session ready', 'meta');
     this.termWrite(' ');
     this.setTermProgress(0, 'Ready');
@@ -179,44 +179,168 @@ const AiraUI = {
     if (disk != null && this.term.disk) this.term.disk.textContent = disk;
   },
 
-  async onTerminalRun() {
+  onTerminalRun() {
     const input = this.term.input;
     if (!input) return;
     const cmd = input.value.trim();
     if (!cmd) return;
 
     this.termWrite(cmd, 'cmd');
-    this.setTermProgress(15, 'Running…');
+    this.setTermProgress(30, 'Queued…');
     input.value = '';
 
-    if (!window.AiraTermuxBridge || typeof window.AiraTermuxBridge.run !== 'function') {
-      this.termWrite('Termux bridge JS missing', 'err');
-      this.setTermProgress(0, 'Error');
-      input.focus();
-      return;
-    }
-
-    this.setTermProgress(40, 'Termux…');
-    const result = await window.AiraTermuxBridge.run(cmd);
-
-    if (result.ok) {
-      this.setTermProgress(90, 'Done');
-      const text = result.output != null ? String(result.output) : '';
-      if (!text.trim()) {
-        this.termWrite('(no output)', 'meta');
-      } else {
-        text.split('\n').forEach((line) => {
-          this.termWrite(line, 'ok');
-        });
-      }
-      this.setTermProgress(100, 'Done');
-    } else {
-      this.termWrite(result.error || 'failed', 'err');
-      this.setTermProgress(0, 'Error');
-    }
-
-    setTimeout(() => this.setTermProgress(0, 'Ready'), 900);
+    this.termWrite('// Shell bridge baad mein — abhi UI only', 'meta');
+    this.setTermProgress(100, 'Done');
+    setTimeout(() => this.setTermProgress(0, 'Ready'), 700);
     input.focus();
   },
 
-  setEngine
+  setEngineStatus(text, ok) {
+    const el = this.els.engineStatusVal;
+    if (!el) return;
+    el.textContent = text;
+    el.style.color = ok ? '#34d399' : 'var(--text-secondary)';
+  },
+
+  setCompanionName(name) {
+    document.querySelectorAll('.character-name, .header-name').forEach(el => {
+      el.textContent = name;
+    });
+  },
+
+  addMessage(text, isUser) {
+    isUser = !!isUser;
+    const msg = document.createElement('div');
+    msg.className = 'message ' + (isUser ? 'user' : 'ai');
+
+    if (!isUser) {
+      const av = document.createElement('img');
+      av.className = 'message-avatar';
+      av.src = this.FIXED_AVATAR;
+      av.alt = 'Aira';
+      msg.appendChild(av);
+    }
+
+    const wrap = document.createElement('div');
+    wrap.className = 'bubble-wrap';
+
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.textContent = text;
+    wrap.appendChild(bubble);
+
+    const meta = document.createElement('div');
+    meta.className = 'bubble-meta';
+    meta.textContent = new Date().toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    wrap.appendChild(meta);
+
+    msg.appendChild(wrap);
+    this.els.messages.appendChild(msg);
+    this.els.messages.scrollTop = this.els.messages.scrollHeight;
+  },
+
+  addImageMessage(imageSrc, caption) {
+    const msg = document.createElement('div');
+    msg.className = 'message ai';
+
+    const av = document.createElement('img');
+    av.className = 'message-avatar';
+    av.src = this.FIXED_AVATAR;
+    av.alt = 'Aira';
+    msg.appendChild(av);
+
+    const wrap = document.createElement('div');
+    wrap.className = 'bubble-wrap';
+
+    if (caption) {
+      const cap = document.createElement('div');
+      cap.className = 'bubble';
+      cap.textContent = caption;
+      wrap.appendChild(cap);
+    }
+
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble image-bubble';
+
+    const img = document.createElement('img');
+    img.src = imageSrc;
+    img.alt = 'Aira';
+    img.onclick = () => this.openImageViewer(imageSrc);
+    img.onerror = () => {
+      bubble.innerHTML = '';
+      bubble.className = 'bubble';
+      bubble.textContent = 'Photo load nahi hui.';
+    };
+
+    bubble.appendChild(img);
+    wrap.appendChild(bubble);
+
+    const meta = document.createElement('div');
+    meta.className = 'bubble-meta';
+    meta.textContent = new Date().toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    wrap.appendChild(meta);
+
+    msg.appendChild(wrap);
+    this.els.messages.appendChild(msg);
+    this.els.messages.scrollTop = this.els.messages.scrollHeight;
+  },
+
+  showTyping() {
+    const el = document.createElement('div');
+    el.className = 'message ai';
+    el.id = 'typingIndicator';
+    el.innerHTML =
+      '<img class="message-avatar" src="' + this.FIXED_AVATAR + '" alt="Aira" />' +
+      '<div class="bubble-wrap"><div class="typing"><span></span><span></span><span></span></div></div>';
+    this.els.messages.appendChild(el);
+    this.els.messages.scrollTop = this.els.messages.scrollHeight;
+  },
+
+  hideTyping() {
+    const t = document.getElementById('typingIndicator');
+    if (t) t.remove();
+  },
+
+  clearMessages() {
+    if (this.els.messages) this.els.messages.innerHTML = '';
+  },
+
+  ensureImageViewer() {
+    if (document.getElementById('imageViewer')) return;
+
+    const viewer = document.createElement('div');
+    viewer.id = 'imageViewer';
+    viewer.className = 'image-viewer';
+    viewer.innerHTML =
+      '<button class="viewer-close" type="button" aria-label="Close">×</button>' +
+      '<img id="imageViewerImg" src="" alt="Full" />';
+    document.body.appendChild(viewer);
+
+    viewer.querySelector('.viewer-close').onclick = () => this.closeImageViewer();
+    viewer.onclick = (e) => {
+      if (e.target === viewer) this.closeImageViewer();
+    };
+  },
+
+  openImageViewer(src) {
+    const viewer = document.getElementById('imageViewer');
+    const img = document.getElementById('imageViewerImg');
+    if (!viewer || !img) return;
+    img.src = src;
+    img.style.transform = 'scale(1)';
+    viewer.classList.add('active');
+  },
+
+  closeImageViewer() {
+    const viewer = document.getElementById('imageViewer');
+    if (viewer) viewer.classList.remove('active');
+  }
+};
+
+window.AiraUI = AiraUI;
