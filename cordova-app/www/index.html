@@ -152,6 +152,21 @@
         </div>
 
         <div class="header-actions">
+          <button
+            class="icon-btn"
+            id="voiceToggleBtn"
+            type="button"
+            title="Voice OFF"
+            aria-label="Toggle voice"
+            aria-pressed="false"
+          >
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M12 3a3 3 0 00-3 3v6a3 3 0 006 0V6a3 3 0 00-3-3z" />
+              <path d="M5 11a7 7 0 0014 0" />
+              <path d="M12 18v3" />
+            </svg>
+          </button>
+
           <button class="icon-btn" id="clearChatBtn" type="button" title="Clear chat" aria-label="Clear chat">
             <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 18 18">
               <path d="M4 6h12" />
@@ -227,22 +242,34 @@
     </div>
   </div>
 
-  <!-- Scripts AFTER HTML so blank screen na aaye -->
   <script src="model_selector.js"></script>
   <script src="model_rotator.js"></script>
   <script src="js/aira_accessibility.js"></script>
   <script src="js/persona.js"></script>
+  <script src="js/voice.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/chat.js"></script>
 
   <script>
     function startAira() {
       try {
+        if (window.AiraVoice && AiraVoice.init) {
+          AiraVoice.init();
+        }
+
         if (typeof AiraUI !== "undefined" && AiraUI.init) {
           AiraUI.init();
         }
+
         if (typeof AiraChat !== "undefined" && AiraChat.init) {
           AiraChat.init();
+        }
+
+        var vb = document.getElementById("voiceToggleBtn");
+        if (vb && window.AiraVoice) {
+          vb.onclick = function () {
+            AiraVoice.toggle();
+          };
         }
       } catch (e) {
         console.error(e);
