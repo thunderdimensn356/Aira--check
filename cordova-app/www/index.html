@@ -23,11 +23,11 @@
   <link rel="stylesheet" href="css/aira.css" />
   <link rel="stylesheet" href="css/terminal.css" />
 
-  <!-- Core -->
+  <!-- www/ root -->
   <script src="model_selector.js"></script>
   <script src="model_rotator.js"></script>
 
-  <!-- Aira modules -->
+  <!-- www/js/ -->
   <script src="js/aira_accessibility.js"></script>
   <script src="js/persona.js"></script>
   <script src="js/ui.js"></script>
@@ -37,86 +37,50 @@
 <body>
   <div class="app">
 
-    <!-- DRAWER OVERLAY -->
     <div class="drawer-overlay" id="overlay"></div>
 
-    <!-- DRAWER -->
     <aside class="drawer" id="drawer">
-
       <div class="drawer-header">
         <button class="close-btn" id="closeDrawer" type="button" aria-label="Close menu">
-          <svg
-            width="16"
-            height="16"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            viewBox="0 0 16 16"
-          >
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 16 16">
             <path d="M4 4l8 8M12 4l-8 8" />
           </svg>
         </button>
       </div>
 
       <div class="character-section">
-
-        <!-- CHARACTER -->
         <div class="character-frame">
-          <img
-            id="characterImage"
-            src="Avatar/neutral.png"
-            alt="Aira"
-          />
+          <img id="characterImage" src="Avatar/neutral.png" alt="Aira" />
         </div>
 
-        <!-- CHARACTER INFO -->
         <div class="character-info">
           <h1 class="character-name">Aira</h1>
-
           <div class="character-status">
             <span class="status-dot"></span>
             Online
           </div>
-
-          <div class="emotion-label">
-            Current Feeling
-          </div>
-
-          <div class="emotion-name" id="emotionName">
-            Calm
-          </div>
+          <div class="emotion-label">Current Feeling</div>
+          <div class="emotion-name" id="emotionName">Calm</div>
         </div>
 
-        <!-- PROFILE -->
         <div class="profile-section">
-
           <div class="profile-title">
             <span>Profile</span>
-
-            <button
-              class="settings-trigger-btn"
-              id="openSettingsBtn"
-              type="button"
-            >
-              Settings
-            </button>
+            <button class="settings-trigger-btn" id="openSettingsBtn" type="button">Settings</button>
           </div>
 
           <div class="profile-item">
             <span class="label">Name</span>
             <span class="value">Aira</span>
           </div>
-
           <div class="profile-item">
             <span class="label">Persona</span>
             <span class="value">Partner</span>
           </div>
-
           <div class="profile-item">
             <span class="label">Mood</span>
             <span class="value" id="profileMood">Calm</span>
           </div>
-
           <div class="profile-item">
             <span class="label">Engine</span>
             <span class="value" id="engineStatusVal">No Key Set</span>
@@ -125,440 +89,184 @@
           <p class="profile-bio">
             Warm, sharp, emotionally present — your partner and capable companion.
           </p>
-
         </div>
       </div>
     </aside>
 
-    <!-- SETTINGS MODAL -->
     <div class="modal-overlay" id="settingsModal">
-
       <div class="settings-card">
-
         <div class="settings-header">
           <h3>Settings</h3>
-
-          <button
-            class="close-btn"
-            id="closeSettingsBtn"
-            type="button"
-            aria-label="Close settings"
-          >
-            X
-          </button>
+          <button class="close-btn" id="closeSettingsBtn" type="button" aria-label="Close settings">X</button>
         </div>
 
         <div class="settings-body">
-
-          <!-- SETTINGS NAV -->
           <div class="settings-nav">
-
-            <button
-              class="nav-tab active"
-              data-tab="general"
-              type="button"
-            >
-              General
-            </button>
-
-            <button
-              class="nav-tab"
-              data-tab="api"
-              type="button"
-            >
-              API
-            </button>
-
+            <button class="nav-tab active" data-tab="general" type="button">General</button>
+            <button class="nav-tab" data-tab="api" type="button">API</button>
           </div>
 
           <div class="settings-content">
-
-            <!-- GENERAL -->
             <div class="tab-panel active" id="tab-general">
-
               <h4>General Settings</h4>
-
               <div class="input-group">
-                <label for="cfgName">
-                  Companion Name
-                </label>
-
-                <input
-                  type="text"
-                  id="cfgName"
-                  value="Aira"
-                />
+                <label for="cfgName">Companion Name</label>
+                <input type="text" id="cfgName" value="Aira" />
               </div>
-
             </div>
 
-            <!-- API -->
             <div class="tab-panel" id="tab-api">
-
               <h4>API Configuration</h4>
-
-              <p
-                style="
-                  font-size:12px;
-                  color:var(--text-secondary);
-                  margin-bottom:12px;
-                  line-height:1.5;
-                "
-              >
+              <p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;line-height:1.5;">
                 Multiple keys support:<br>
-
                 <code>1=AIzaSyKey1...</code><br>
                 <code>2=AIzaSyKey2...</code><br>
                 <code>3=AIzaSyKey3...</code>
               </p>
-
               <div class="input-group">
-
-                <label for="cfgApiKeys">
-                  Gemini API Keys
-                </label>
-
+                <label for="cfgApiKeys">Gemini API Keys</label>
                 <textarea
                   id="cfgApiKeys"
                   rows="8"
                   placeholder="1=AIzaSy...&#10;2=AIzaSy...&#10;3=AIzaSy..."
                 ></textarea>
-
               </div>
-
             </div>
-
           </div>
         </div>
 
-        <!-- SETTINGS FOOTER -->
         <div class="settings-footer">
-
-          <button
-            class="action-btn"
-            id="cancelSettingsBtn"
-            type="button"
-          >
-            Cancel
-          </button>
-
-          <button
-            class="action-btn primary"
-            id="saveSettingsBtn"
-            type="button"
-          >
-            Save
-          </button>
-
+          <button class="action-btn" id="cancelSettingsBtn" type="button">Cancel</button>
+          <button class="action-btn primary" id="saveSettingsBtn" type="button">Save</button>
         </div>
-
       </div>
     </div>
 
-    <!-- CHAT PANEL -->
     <div class="chat-panel">
-
-      <!-- CHAT HEADER -->
       <div class="chat-header">
-
-        <button
-          class="menu-btn"
-          id="openDrawer"
-          type="button"
-          aria-label="Open menu"
-        >
-          <svg
-            width="20"
-            height="20"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            viewBox="0 0 20 20"
-          >
+        <button class="menu-btn" id="openDrawer" type="button" aria-label="Open menu">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 20 20">
             <path d="M4 6h12M4 10h12M4 14h12" />
           </svg>
         </button>
 
         <div class="header-character">
-
-          <img
-            class="header-avatar"
-            id="headerAvatar"
-            src="Avatar/neutral.png"
-            alt="Aira"
-          />
-
+          <img class="header-avatar" id="headerAvatar" src="Avatar/neutral.png" alt="Aira" />
           <div>
-            <div class="header-name">
-              Aira
-            </div>
-
+            <div class="header-name">Aira</div>
             <div class="header-status">
               <span class="dot"></span>
               Online
             </div>
           </div>
-
         </div>
 
-        <!-- HEADER ACTIONS -->
         <div class="header-actions">
-
-          <!-- TERMINAL -->
-          <button
-            class="icon-btn"
-            id="openTerminalBtn"
-            type="button"
-            title="Terminal"
-            aria-label="Open terminal"
-          >
-            <svg
-              width="18"
-              height="18"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              viewBox="0 0 24 24"
-            >
-              <path d="M4 17l6-5-6-5" />
-              <path d="M12 19h8" />
-            </svg>
-          </button>
-
-          <!-- CLEAR CHAT -->
-          <button
-            class="icon-btn"
-            id="clearChatBtn"
-            type="button"
-            title="Clear chat"
-            aria-label="Clear chat"
-          >
-            <svg
-              width="18"
-              height="18"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              viewBox="0 0 18 18"
-            >
+          <!-- terminal header button removed — open via chat: "open terminal" -->
+          <button class="icon-btn" id="clearChatBtn" type="button" title="Clear chat" aria-label="Clear chat">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 18 18">
               <path d="M4 6h12" />
               <path d="M6 6v10a1 1 0 001 1h6a1 1 0 001-1V6" />
               <path d="M8 6V4h4v2" />
             </svg>
           </button>
-
         </div>
       </div>
 
-      <!-- MESSAGES -->
-      <div
-        class="messages"
-        id="messages"
-      ></div>
+      <div class="messages" id="messages"></div>
 
-      <!-- INPUT -->
       <div class="input-area">
-
         <div class="input-box">
-
-          <textarea
-            id="userInput"
-            placeholder="Message Aira..."
-            rows="1"
-          ></textarea>
-
-          <button
-            class="send-btn"
-            id="sendBtn"
-            type="button"
-            aria-label="Send message"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.2"
-              width="18"
-              height="18"
-            >
+          <textarea id="userInput" placeholder="Message Aira..." rows="1"></textarea>
+          <button class="send-btn" id="sendBtn" type="button" aria-label="Send message">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="18" height="18">
               <path d="M22 2L11 13" />
               <path d="M22 2L15 22L11 13L2 9L22 2Z" />
             </svg>
           </button>
-
         </div>
       </div>
-
     </div>
   </div>
 
-  <!-- ========================================================= -->
-  <!-- TERMINAL VIEW                                             -->
-  <!-- ========================================================= -->
-
-  <div
-    class="terminal-view"
-    id="terminalView"
-  >
-
-    <!-- TERMINAL HEADER -->
+  <!-- Terminal panel: chat se "open terminal" -->
+  <div class="terminal-view" id="terminalView">
     <header class="term-header">
-
-      <button
-        class="term-back"
-        id="closeTerminalBtn"
-        type="button"
-        aria-label="Back"
-      >
-        <svg
-          width="18"
-          height="18"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          viewBox="0 0 18 18"
-        >
+      <button class="term-back" id="closeTerminalBtn" type="button" aria-label="Back">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 18 18">
           <path d="M12 4l-6 6 6 6" />
         </svg>
       </button>
-
       <div class="term-title-block">
         <h1>Terminal</h1>
-        <p>Termux session</p>
+        <p>Session</p>
       </div>
-
-      <div
-        class="term-pill"
-        id="termStatusPill"
-      >
-        Connected
-      </div>
-
+      <div class="term-pill" id="termStatusPill">Ready</div>
     </header>
 
-    <!-- SYSTEM STATUS -->
     <div class="term-sys">
-
-      <span>
-        CPU
-        <strong id="termCpu">—</strong>
-      </span>
-
+      <span>CPU <strong id="termCpu">—</strong></span>
       <span class="sep"></span>
-
-      <span>
-        RAM
-        <strong id="termRam">—</strong>
-      </span>
-
+      <span>RAM <strong id="termRam">—</strong></span>
       <span class="sep"></span>
-
-      <span>
-        Disk
-        <strong id="termDisk">—</strong>
-      </span>
-
-      <span
-        class="task"
-        id="termTask"
-      >
-        Ready
-      </span>
-
+      <span>Disk <strong id="termDisk">—</strong></span>
+      <span class="task" id="termTask">Ready</span>
     </div>
 
-    <!-- PROGRESS -->
     <div class="term-progress">
-      <div class="bar">
-        <span id="termProgressFill"></span>
-      </div>
+      <div class="bar"><span id="termProgressFill"></span></div>
     </div>
 
-    <!-- TERMINAL BODY -->
     <div class="term-body">
-
-      <div
-        class="term-scroll"
-        id="termScroll"
-      >
-
-        <div class="term-line">
-          <span class="meta">
-            # Aira · Termux bridge
-          </span>
-        </div>
-
-        <div class="term-line">
-          <span class="meta">
-            # Session ready
-          </span>
-        </div>
-
-        <div class="term-line">
-          &nbsp;
-        </div>
-
+      <div class="term-scroll" id="termScroll">
+        <div class="term-line"><span class="meta"># Aira terminal</span></div>
+        <div class="term-line"><span class="meta"># Bol ke kholo: open terminal</span></div>
+        <div class="term-line">&nbsp;</div>
       </div>
-
     </div>
 
-    <!-- TERMINAL COMPOSER -->
     <div class="term-composer">
-
       <div class="term-composer-box">
-
-        <span class="term-prompt">
-          $
-        </span>
-
-        <input
-          id="termInput"
-          type="text"
-          spellcheck="false"
-          autocomplete="off"
-          placeholder="Command…"
-        />
-
-        <button
-          class="term-run"
-          type="button"
-          id="termRunBtn"
-          aria-label="Run"
-        >
-          <svg
-            width="16"
-            height="16"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.2"
-            viewBox="0 0 16 16"
-          >
+        <span class="term-prompt">$</span>
+        <input id="termInput" type="text" spellcheck="false" autocomplete="off" placeholder="Command…" />
+        <button class="term-run" type="button" id="termRunBtn" aria-label="Run">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 16 16">
             <path d="M5 3l8 5-8 5V3z" />
           </svg>
         </button>
-
       </div>
-
-      <p class="term-hint">
-        Output Termux se aayega · Aira yahi se command bhejegi
-      </p>
-
+      <p class="term-hint">Shell bridge baad mein · abhi UI session</p>
     </div>
-
   </div>
 
-  <!-- APP INITIALIZATION -->
   <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      if (typeof AiraUI !== "undefined" && AiraUI.init) {
-        AiraUI.init();
+    function startAira() {
+      try {
+        if (typeof AiraUI !== "undefined" && AiraUI.init) {
+          AiraUI.init();
+        }
+        if (typeof AiraChat !== "undefined" && AiraChat.init) {
+          AiraChat.init();
+        }
+      } catch (e) {
+        console.error(e);
+        alert("Aira start error: " + (e && e.message ? e.message : e));
       }
+    }
 
-      if (typeof AiraChat !== "undefined" && AiraChat.init) {
-        AiraChat.init();
-      }
+    document.addEventListener("deviceready", function () {
+      window._airaStarted = true;
+      startAira();
+    }, false);
+
+    document.addEventListener("DOMContentLoaded", function () {
+      setTimeout(function () {
+        if (!window._airaStarted) {
+          window._airaStarted = true;
+          startAira();
+        }
+      }, 250);
     });
   </script>
-
 </body>
 </html>
