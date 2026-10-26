@@ -1,7 +1,6 @@
 /**
  * chat.js
- * Gemini engine, API keys, device actions, show yourself, terminal open
- * Depends on: persona.js, ui.js, model_rotator.js, aira_accessibility.js, voice.js
+ * Gemini + voice + device actions + screenshot vision
  */
 
 const AiraChat = {
@@ -42,6 +41,13 @@ const AiraChat = {
     });
   },
 
+  /** Native screenshot done → AiraAccess */
+  onScreenshotReady() {
+    if (window.AiraAccess && typeof AiraAccess.onScreenshotReady === 'function') {
+      AiraAccess.onScreenshotReady();
+    }
+  },
+
   speak(text) {
     if (window.AiraVoice && typeof AiraVoice.speak === 'function') {
       AiraVoice.speak(text);
@@ -72,6 +78,28 @@ const AiraChat = {
       t.includes('dikha khud') ||
       t.includes('kaisi dikhti') ||
       t.includes('doosari image')
+    );
+  },
+
+  isLookAtScreenRequest(text) {
+    const t = (text || '').toLowerCase().trim();
+    return (
+      t.includes('screen pe kya') ||
+      t.includes('screen par kya') ||
+      t.includes('dekh ke bata') ||
+      t.includes('dekh ke bol') ||
+      t.includes('kya dikh raha') ||
+      t.includes('kya dikha raha') ||
+      t.includes('look at screen') ||
+      t.includes('what is on my screen') ||
+      t.includes('what\'s on my screen') ||
+      t.includes('whats on my screen') ||
+      t.includes('describe screen') ||
+      t.includes('screen dekho') ||
+      t.includes('screenshot le') ||
+      t.includes('ye screen') ||
+      t === 'dekh' ||
+      t === 'look'
     );
   },
 
@@ -212,44 +240,28 @@ const AiraChat = {
 
           const response = await fetch(url, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               system_instruction: {
-                parts: [
-                  {
-                    text: this.getSystemPromptWithTime()
-                  }
-                ]
+                parts: [{ text: this.getSystemPromptWithTime() }]
               },
               contents: this.conversationHistory.slice(-10)
             })
           });
 
           let data;
-
           try {
             data = await response.json();
           } catch (e) {
             throw new Error(`Invalid API response (${response.status})`);
           }
 
-          if (
-            response.ok &&
-            data.candidates?.[0]?.content?.parts?.[0]?.text
-          ) {
-            return {
-              text: data.candidates[0].content.parts[0].text.trim()
-            };
+          if (response.ok && data.candidates?.[0]?.content?.parts?.[0]?.text) {
+            return { text: data.candidates[0].content.parts[0].text.trim() };
           }
 
           const errMsg = data?.error?.message || `HTTP ${response.status}`;
-
-          console.warn(
-            `Gemini error | key ${this.currentKeyIndex + 1} | model ${model}:`,
-            errMsg
-          );
+          console.warn(`Gemini error | key ${this.currentKeyIndex + 1} | model ${model}:`, errMsg);
 
           if (
             response.status === 503 ||
@@ -279,11 +291,7 @@ const AiraChat = {
             continue;
           }
 
-          if (
-            response.status === 400 ||
-            response.status === 401 ||
-            response.status === 403
-          ) {
+          if (response.status === 400 || response.status === 401 || response.status === 403) {
             if (
               /api key/i.test(errMsg) ||
               /permission/i.test(errMsg) ||
@@ -305,9 +313,146 @@ const AiraChat = {
       this.modelRotator.reset();
     }
 
-    return {
-      error: 'All API keys and models failed. Please try again later.'
-    };
+    return { error: 'All API keys and models failed. Please try again later.' };
+  },
+
+  /** One-shot vision: screenshot + user question */
+  async callGeminiVision(base64Jpeg, userText) {
+    if (this.apiKeys.length === 0) {
+      return { error: 'No API key configured. Open Settings → API.' };
+    }
+
+    const prompt =
+      (userText && userText.trim()) ||
+      'Describe what is on the screen. Be clear and helpful. Reply in the same language the user used if possible.';
+
+    const totalKeys = this.apiKeys.length;
+    const totalModels = this.modelRotator.count() || 8;
+
+    for (let keyAttempt = 0; keyAttempt < totalKeys; keyAttempt++) {
+      const apiKey = this.apiKeys[this.currentKeyIndex];
+
+      for (let modelAttempt = 0; modelAttempt < totalModels; modelAttempt++) {
+        const model = this.modelRotator.getCurrentModel();
+
+        try {
+          const url =
+            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
+
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              system_instruction: {
+                parts: [{
+                  text:
+                    this.getSystemPromptWithTime() +
+                    '\n\nYou can see a screenshot of the user device. Describe accurately. Do not invent UI that is not visible.'
+                }]
+              },
+              contents: [{
+                role: 'user',
+                parts: [
+                  { text: prompt },
+                  {
+                    inline_data: {
+                      mime_type: 'image/jpeg',
+                      data: base64Jpeg
+                    }
+                  }
+                ]
+              }]
+            })
+          });
+
+          let data;
+          try {
+            data = await response.json();
+          } catch (e) {
+            throw new Error(`Invalid API response (${response.status})`);
+          }
+
+          if (response.ok && data.candidates?.[0]?.content?.parts?.[0]?.text) {
+            return { text: data.candidates[0].content.parts[0].text.trim() };
+          }
+
+          const errMsg = data?.error?.message || `HTTP ${response.status}`;
+          console.warn('Vision error', model, errMsg);
+
+          if (
+            response.status === 503 ||
+            /high demand/i.test(errMsg) ||
+            /overloaded/i.test(errMsg) ||
+            /not found/i.test(errMsg) ||
+            /not supported/i.test(errMsg)
+          ) {
+            this.modelRotator.next();
+            continue;
+          }
+
+          if (response.status === 429 || /quota/i.test(errMsg)) {
+            break;
+          }
+
+          return { error: errMsg };
+        } catch (err) {
+          console.error(err);
+          this.modelRotator.next();
+        }
+      }
+
+      this.currentKeyIndex = (this.currentKeyIndex + 1) % totalKeys;
+      this.modelRotator.reset();
+    }
+
+    return { error: 'Vision request failed on all keys/models.' };
+  },
+
+  async handleLookAtScreen(userText) {
+    const btn = AiraUI.els.sendBtn;
+    btn.disabled = true;
+    AiraUI.showTyping();
+
+    const shot = await AiraAccess.captureScreen();
+
+    if (!shot.ok || !shot.base64) {
+      AiraUI.hideTyping();
+      let msg = 'Screenshot nahi le payi.';
+      if (shot.error === 'no-service') {
+        msg = 'Accessibility ON karo (Settings → Accessibility → Aira), phir try karo.';
+      } else if (shot.error === 'android11-required') {
+        msg = 'Screenshot ke liye Android 11+ chahiye.';
+      } else if (shot.error) {
+        msg = 'Screenshot fail: ' + shot.error;
+      }
+      AiraUI.addMessage(msg, false);
+      this.speak(msg);
+      btn.disabled = false;
+      return;
+    }
+
+    const result = await this.callGeminiVision(shot.base64, userText);
+    AiraUI.hideTyping();
+
+    if (result.text) {
+      AiraUI.addMessage(result.text, false);
+      this.speak(result.text);
+      this.conversationHistory.push({
+        role: 'user',
+        parts: [{ text: '[Screen share] ' + (userText || 'What is on my screen?') }]
+      });
+      this.conversationHistory.push({
+        role: 'model',
+        parts: [{ text: result.text }]
+      });
+    } else {
+      const msg = 'Error: ' + (result.error || 'Vision failed');
+      AiraUI.addMessage(msg, false);
+    }
+
+    this.updateEngineState();
+    btn.disabled = false;
+    AiraUI.els.userInput.focus();
   },
 
   async handleFastPath(cmd) {
@@ -333,7 +478,6 @@ const AiraChat = {
     if (cmd === 'open chrome' || cmd === 'chrome kholo') {
       input.value = '';
       btn.disabled = true;
-
       try {
         const ok = await AiraAccess.openApp('com.android.chrome');
         const msg = ok
@@ -346,7 +490,6 @@ const AiraChat = {
         AiraUI.addMessage(msg, false);
         this.speak(msg);
       }
-
       btn.disabled = false;
       input.focus();
       return true;
@@ -355,7 +498,6 @@ const AiraChat = {
     if (cmd === 'go home' || cmd === 'home') {
       input.value = '';
       btn.disabled = true;
-
       try {
         const ok = await AiraAccess.goHome();
         const msg = ok
@@ -368,7 +510,6 @@ const AiraChat = {
         AiraUI.addMessage(msg, false);
         this.speak(msg);
       }
-
       btn.disabled = false;
       input.focus();
       return true;
@@ -377,7 +518,6 @@ const AiraChat = {
     if (cmd === 'go back' || cmd === 'back') {
       input.value = '';
       btn.disabled = true;
-
       try {
         const ok = await AiraAccess.goBack();
         const msg = ok ? 'Back kar diya.' : 'Back nahi ho paya.';
@@ -388,7 +528,6 @@ const AiraChat = {
         AiraUI.addMessage(msg, false);
         this.speak(msg);
       }
-
       btn.disabled = false;
       input.focus();
       return true;
@@ -397,7 +536,6 @@ const AiraChat = {
     if (cmd === 'open notifications' || cmd === 'notifications') {
       input.value = '';
       btn.disabled = true;
-
       try {
         const ok = await AiraAccess.openNotifications();
         const msg = ok
@@ -410,7 +548,6 @@ const AiraChat = {
         AiraUI.addMessage(msg, false);
         this.speak(msg);
       }
-
       btn.disabled = false;
       input.focus();
       return true;
@@ -419,7 +556,6 @@ const AiraChat = {
     if (cmd === 'open recents' || cmd === 'recents') {
       input.value = '';
       btn.disabled = true;
-
       try {
         const ok = await AiraAccess.openRecents();
         const msg = ok
@@ -432,7 +568,6 @@ const AiraChat = {
         AiraUI.addMessage(msg, false);
         this.speak(msg);
       }
-
       btn.disabled = false;
       input.focus();
       return true;
@@ -453,6 +588,14 @@ const AiraChat = {
     const cmd = text.toLowerCase().trim();
 
     if (await this.handleFastPath(cmd)) return;
+
+    // Screenshot vision
+    if (this.isLookAtScreenRequest(text)) {
+      input.value = '';
+      input.style.height = 'auto';
+      await this.handleLookAtScreen(text);
+      return;
+    }
 
     input.value = '';
     input.style.height = 'auto';
@@ -516,9 +659,7 @@ const AiraChat = {
         }
       } else {
         if (
-          this.conversationHistory[
-            this.conversationHistory.length - 1
-          ]?.role === 'user'
+          this.conversationHistory[this.conversationHistory.length - 1]?.role === 'user'
         ) {
           this.conversationHistory.pop();
         }
