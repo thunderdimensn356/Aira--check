@@ -16,12 +16,13 @@ public class MainActivity extends CordovaActivity {
 
         loadUrl(launchUrl);
 
-        // Register native bridges (Accessibility + Termux)
+        // Register native bridges (Accessibility + Termux + TTS)
         if (appView != null && appView.getView() instanceof WebView) {
             WebView webView = (WebView) appView.getView();
             webView.getSettings().setJavaScriptEnabled(true);
             webView.addJavascriptInterface(new AiraNativeBridge(), "AiraNative");
             webView.addJavascriptInterface(new TermuxBridge(this, webView), "AiraTermux");
+            webView.addJavascriptInterface(new AiraTtsBridge(this), "AiraTts");
         }
     }
 }
