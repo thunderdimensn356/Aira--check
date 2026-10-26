@@ -2,15 +2,29 @@ package com.aira.app;
 
 import android.accessibilityservice.AccessibilityService;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.ColorSpace;
+import android.hardware.HardwareBuffer;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.util.Base64;
 import android.util.Log;
+import android.view.Display;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
+
+import java.io.ByteArrayOutputStream;
 
 public class AiraAccessibilityService extends AccessibilityService {
 
     private static final String TAG = "AiraAccess";
     private static AiraAccessibilityService instance;
+
+    public interface ScreenshotCallback {
+        void onResult(String base64Png, String error);
+    }
 
     public static AiraAccessibilityService getInstance() {
         return instance;
@@ -25,7 +39,7 @@ public class AiraAccessibilityService extends AccessibilityService {
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
-        // Later use for screen reading
+        // Later: screen reading
     }
 
     @Override
@@ -39,13 +53,11 @@ public class AiraAccessibilityService extends AccessibilityService {
         instance = null;
     }
 
-    // Open app by package name (strong version)
     public boolean openApp(String packageName) {
         try {
             Intent intent = getPackageManager().getLaunchIntentForPackage(packageName);
 
             if (intent == null) {
-                // Fallback for Android 11+ package visibility issues
                 intent = new Intent(Intent.ACTION_MAIN);
                 intent.addCategory(Intent.CATEGORY_LAUNCHER);
                 intent.setPackage(packageName);
@@ -66,7 +78,6 @@ public class AiraAccessibilityService extends AccessibilityService {
         }
     }
 
-    // Click by visible text
     public boolean clickByText(String text) {
         AccessibilityNodeInfo root = getRootInActiveWindow();
         if (root == null) return false;
@@ -94,7 +105,6 @@ public class AiraAccessibilityService extends AccessibilityService {
         return false;
     }
 
-    // Type text into focused field
     public boolean typeText(String text) {
         AccessibilityNodeInfo root = getRootInActiveWindow();
         if (root == null) return false;
@@ -107,7 +117,6 @@ public class AiraAccessibilityService extends AccessibilityService {
         return focus.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, args);
     }
 
-    // Global actions
     public void goHome() {
         performGlobalAction(GLOBAL_ACTION_HOME);
     }
@@ -122,5 +131,94 @@ public class AiraAccessibilityService extends AccessibilityService {
 
     public void openRecents() {
         performGlobalAction(GLOBAL_ACTION_RECENTS);
+    }
+
+    /**
+     * Screenshot via Accessibility (Android 11+).
+     * Callback on main thread: base64 PNG (no data: prefix) or error code.
+     */
+    public void captureScreenshot(final ScreenshotCallback callback) {
+        if (callback == null) return;
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+            callback.onResult(null, "android11-required");
+            return;
+        }
+
+        try {
+            takeScreenshot(
+                Display.DEFAULT_DISPLAY,
+                getMainExecutor(),
+                new TakeScreenshotCallback() {
+                    @Override
+                    public void onSuccess(ScreenshotResult screenshot) {
+                        String b64 = null;
+                        String err = null;
+                        HardwareBuffer buffer = null;
+                        try {
+                            buffer = screenshot.getHardwareBuffer();
+                            ColorSpace cs = screenshot.getColorSpace();
+                            Bitmap hw = Bitmap.wrapHardwareBuffer(buffer, cs);
+                            if (hw == null) {
+                                err = "bitmap-null";
+                            } else {
+                                Bitmap bmp = hw.copy(Bitmap.Config.ARGB_8888, false);
+                                hw.recycle();
+                                if (bmp == null) {
+                                    err = "copy-failed";
+                                } else {
+                                    // size control for API
+                                    int maxW = 1080;
+                                    if (bmp.getWidth() > maxW) {
+                                        float s = maxW / (float) bmp.getWidth();
+                                        Bitmap scaled = Bitmap.createScaledBitmap(
+                                            bmp,
+                                            maxW,
+                                            Math.round(bmp.getHeight() * s),
+                                            true
+                                        );
+                                        bmp.recycle();
+                                        bmp = scaled;
+                                    }
+                                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                                    bmp.compress(Bitmap.CompressFormat.JPEG, 75, baos);
+                                    bmp.recycle();
+                                    b64 = Base64.encodeToString(baos.toByteArray(), Base64.NO_WRAP);
+                                }
+                            }
+                        } catch (Exception e) {
+                            Log.e(TAG, "Screenshot encode failed", e);
+                            err = e.getMessage() != null ? e.getMessage() : "encode-failed";
+                        } finally {
+                            if (buffer != null) {
+                                try { buffer.close(); } catch (Exception ignored) {}
+                            }
+                        }
+
+                        final String outB64 = b64;
+                        final String outErr = err;
+                        new Handler(Looper.getMainLooper()).post(new Runnable() {
+                            @Override
+                            public void run() {
+                                callback.onResult(outB64, outErr);
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onFailure(int errorCode) {
+                        new Handler(Looper.getMainLooper()).post(new Runnable() {
+                            @Override
+                            public void run() {
+                                callback.onResult(null, "fail-" + errorCode);
+                            }
+                        });
+                    }
+                }
+            );
+        } catch (Exception e) {
+            Log.e(TAG, "takeScreenshot failed", e);
+            callback.onResult(null, e.getMessage() != null ? e.getMessage() : "exception");
+        }
     }
 }
