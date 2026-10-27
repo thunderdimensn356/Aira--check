@@ -1,6 +1,6 @@
 /**
  * chat.js
- * Gemini + voice + device actions + screenshot vision
+ * Gemini + voice + screenshot vision + open app fast-path
  */
 
 const AiraChat = {
@@ -8,6 +8,26 @@ const AiraChat = {
   apiKeys: [],
   currentKeyIndex: 0,
   modelRotator: null,
+
+  APP_PACKAGES: {
+    youtube: 'com.google.android.youtube',
+    yt: 'com.google.android.youtube',
+    chrome: 'com.android.chrome',
+    whatsapp: 'com.whatsapp',
+    settings: 'com.android.settings',
+    camera: 'com.android.camera',
+    gallery: 'com.google.android.apps.photos',
+    photos: 'com.google.android.apps.photos',
+    gmail: 'com.google.android.gm',
+    maps: 'com.google.android.apps.maps',
+    instagram: 'com.instagram.android',
+    facebook: 'com.facebook.katana',
+    twitter: 'com.twitter.android',
+    x: 'com.twitter.android',
+    telegram: 'org.telegram.messenger',
+    playstore: 'com.android.vending',
+    'play store': 'com.android.vending'
+  },
 
   SELF_PHOTOS: [
     'self/exercise.jpg',
@@ -41,7 +61,6 @@ const AiraChat = {
     });
   },
 
-  /** Native screenshot done → AiraAccess */
   onScreenshotReady() {
     if (window.AiraAccess && typeof AiraAccess.onScreenshotReady === 'function') {
       AiraAccess.onScreenshotReady();
@@ -82,25 +101,110 @@ const AiraChat = {
   },
 
   isLookAtScreenRequest(text) {
-    const t = (text || '').toLowerCase().trim();
-    return (
-      t.includes('screen pe kya') ||
-      t.includes('screen par kya') ||
+    const raw = (text || '').trim();
+    const t = raw.toLowerCase();
+
+    if (
+      t.includes('screen pe') ||
+      t.includes('screen par') ||
+      t.includes('on my screen') ||
+      t.includes('on the screen') ||
+      t.includes('look at screen') ||
+      t.includes('describe screen') ||
+      t.includes('what is on my screen') ||
+      t.includes("what's on my screen") ||
+      t.includes('whats on my screen') ||
+      t.includes('screenshot') ||
       t.includes('dekh ke bata') ||
       t.includes('dekh ke bol') ||
-      t.includes('kya dikh raha') ||
-      t.includes('kya dikha raha') ||
-      t.includes('look at screen') ||
-      t.includes('what is on my screen') ||
-      t.includes('what\'s on my screen') ||
-      t.includes('whats on my screen') ||
-      t.includes('describe screen') ||
+      t.includes('kya dikh') ||
+      t.includes('kya chal raha') ||
+      t.includes('kya chal rha') ||
+      t.includes('konsa app') ||
+      t.includes('kaun sa app') ||
+      t.includes('kaunsa app') ||
+      t.includes('kya khula') ||
       t.includes('screen dekho') ||
-      t.includes('screenshot le') ||
-      t.includes('ye screen') ||
+      t.includes('screen dekh') ||
       t === 'dekh' ||
       t === 'look'
-    );
+    ) {
+      return true;
+    }
+
+    if (
+      raw.includes('स्क्रीन') ||
+      raw.includes('स्क्रिन') ||
+      raw.includes('देख के बता') ||
+      raw.includes('देख के बोल') ||
+      raw.includes('क्या दिख') ||
+      raw.includes('क्या चल') ||
+      raw.includes('कौन सा ऐप') ||
+      raw.includes('कौनसा ऐप') ||
+      raw.includes('क्या खुला') ||
+      raw.includes('स्क्रीनशॉट')
+    ) {
+      return true;
+    }
+
+    return false;
+  },
+
+  resolveAppPackage(cmd) {
+    const t = (cmd || '').toLowerCase().trim();
+
+    if (t === 'yt' || t.includes('youtube') || /\byt\b/.test(t)) {
+      if (
+        t.includes('open') ||
+        t.includes('kholo') ||
+        t.includes('khol') ||
+        t === 'yt' ||
+        t === 'youtube'
+      ) {
+        return { name: 'YouTube', pkg: this.APP_PACKAGES.youtube };
+      }
+    }
+
+    const entries = Object.keys(this.APP_PACKAGES);
+    for (let i = 0; i < entries.length; i++) {
+      const key = entries[i];
+      if (key === 'yt' || key === 'youtube') continue;
+      if (
+        t === key ||
+        t === 'open ' + key ||
+        t === key + ' kholo' ||
+        t === key + ' open' ||
+        t.includes('open ' + key) ||
+        t.includes(key + ' kholo') ||
+        t.includes(key + ' khol')
+      ) {
+        const label = key.charAt(0).toUpperCase() + key.slice(1);
+        return { name: label, pkg: this.APP_PACKAGES[key] };
+      }
+    }
+
+    return null;
+  },
+
+  async openAppByName(app) {
+    const btn = AiraUI.els.sendBtn;
+    btn.disabled = true;
+
+    try {
+      const ok = await AiraAccess.openApp(app.pkg);
+      const msg = ok
+        ? app.name + ' open kar diya.'
+        : app.name + ' nahi khul paya. App install / Accessibility check karo.';
+      AiraUI.addMessage(msg, false);
+      this.speak(msg);
+    } catch (e) {
+      const msg = app.name + ' open nahi ho paya.';
+      AiraUI.addMessage(msg, false);
+      this.speak(msg);
+    }
+
+    btn.disabled = false;
+    AiraUI.els.userInput.focus();
   },
 
   parseApiKeys(rawText) {
@@ -316,7 +420,6 @@ const AiraChat = {
     return { error: 'All API keys and models failed. Please try again later.' };
   },
 
-  /** One-shot vision: screenshot + user question */
   async callGeminiVision(base64Jpeg, userText) {
     if (this.apiKeys.length === 0) {
       return { error: 'No API key configured. Open Settings → API.' };
@@ -459,6 +562,24 @@ const AiraChat = {
     const input = AiraUI.els.userInput;
     const btn = AiraUI.els.sendBtn;
 
+    // Step 3: open app (youtube kholo, open chrome, ...)
+    const app = this.resolveAppPackage(cmd);
+    if (app) {
+      const wantsOpen =
+        cmd.includes('open') ||
+        cmd.includes('kholo') ||
+        cmd.includes('khol') ||
+        cmd === 'yt' ||
+        cmd === 'youtube' ||
+        cmd === app.name.toLowerCase();
+
+      if (wantsOpen) {
+        input.value = '';
+        await this.openAppByName(app);
+        return true;
+      }
+    }
+
     if (
       cmd === 'open terminal' ||
       cmd === 'terminal kholo' ||
@@ -472,26 +593,6 @@ const AiraChat = {
       const msg = 'Terminal open kar diya.';
       AiraUI.addMessage(msg, false);
       this.speak(msg);
-      return true;
-    }
-
-    if (cmd === 'open chrome' || cmd === 'chrome kholo') {
-      input.value = '';
-      btn.disabled = true;
-      try {
-        const ok = await AiraAccess.openApp('com.android.chrome');
-        const msg = ok
-          ? 'Chrome open kar diya.'
-          : 'Chrome nahi khul paya. Accessibility check karo.';
-        AiraUI.addMessage(msg, false);
-        this.speak(msg);
-      } catch (e) {
-        const msg = 'Chrome open nahi ho paya.';
-        AiraUI.addMessage(msg, false);
-        this.speak(msg);
-      }
-      btn.disabled = false;
-      input.focus();
       return true;
     }
 
@@ -589,7 +690,6 @@ const AiraChat = {
 
     if (await this.handleFastPath(cmd)) return;
 
-    // Screenshot vision
     if (this.isLookAtScreenRequest(text)) {
       input.value = '';
       input.style.height = 'auto';
