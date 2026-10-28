@@ -1,5 +1,10 @@
 package com.aira.app;
 
+import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Build;
+import android.provider.Settings;
 import android.util.Log;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
@@ -9,6 +14,7 @@ public class AiraNativeBridge {
     private static final String TAG = "AiraNative";
 
     private final WebView webView;
+    private final Context appContext;
 
     private static volatile String lastScreenshotB64 = null;
     private static volatile String lastScreenshotError = null;
@@ -16,6 +22,7 @@ public class AiraNativeBridge {
 
     public AiraNativeBridge(WebView webView) {
         this.webView = webView;
+        this.appContext = webView.getContext().getApplicationContext();
     }
 
     @JavascriptInterface
@@ -74,11 +81,6 @@ public class AiraNativeBridge {
         return true;
     }
 
-    /**
-     * Start screenshot (async). When done, JS receives:
-     *   AiraChat.onScreenshotReady()
-     * Then call getLastScreenshot() / getLastScreenshotError().
-     */
     @JavascriptInterface
     public void captureScreen() {
         screenshotDone = false;
@@ -117,6 +119,62 @@ public class AiraNativeBridge {
     @JavascriptInterface
     public String getLastScreenshotError() {
         return lastScreenshotError != null ? lastScreenshotError : "";
+    }
+
+    /** Stay-live: can draw overlay bubble? */
+    @JavascriptInterface
+    public boolean canDrawOverlays() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            return Settings.canDrawOverlays(appContext);
+        }
+        return true;
+    }
+
+    /** Open system screen: Display over other apps */
+    @JavascriptInterface
+    public void openOverlaySettings() {
+        try {
+            Intent intent = new Intent(
+                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                Uri.parse("package:" + appContext.getPackageName())
+            );
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            appContext.startActivity(intent);
+        } catch (Exception e) {
+            Log.e(TAG, "openOverlaySettings", e);
+        }
+    }
+
+    /** Start foreground live STT + bubble */
+    @JavascriptInterface
+    public boolean startLive() {
+        try {
+            Intent i = new Intent(appContext, AiraLiveService.class);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                appContext.startForegroundService(i);
+            } else {
+                appContext.startService(i);
+            }
+            return true;
+        } catch (Exception e) {
+            Log.e(TAG, "startLive", e);
+            return false;
+        }
+    }
+
+    /** Stop live service */
+    @JavascriptInterface
+    public boolean stopLive() {
+        try {
+            Intent i = new Intent(appContext, AiraLiveService.class);
+            i.setAction("STOP");
+            appContext.startService(i);
+            appContext.stopService(new Intent(appContext, AiraLiveService.class));
+            return true;
+        } catch (Exception e) {
+            Log.e(TAG, "stopLive", e);
+            return false;
+        }
     }
 
     private void notifyScreenshotReady() {
