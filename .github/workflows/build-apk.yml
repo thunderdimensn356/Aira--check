@@ -71,6 +71,11 @@ jobs:
             echo "Copied AiraSttBridge.java"
           fi
 
+          if [ -f native/java/AiraLiveService.java ]; then
+            cp native/java/AiraLiveService.java platforms/android/app/src/main/java/com/aira/app/
+            echo "Copied AiraLiveService.java"
+          fi
+
           # XML service config
           if [ -f native/xml/aira_accessibility_service.xml ]; then
             cp native/xml/aira_accessibility_service.xml platforms/android/app/src/main/res/xml/
@@ -87,27 +92,54 @@ jobs:
             echo "Created aira_strings.xml"
           fi
 
-          # Register service in AndroidManifest
           MANIFEST="platforms/android/app/src/main/AndroidManifest.xml"
+
+          # Accessibility service
           if [ -f "$MANIFEST" ] && ! grep -q "AiraAccessibilityService" "$MANIFEST"; then
             sed -i 's|</application>|        <service android:name=".AiraAccessibilityService" android:exported="false" android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"><intent-filter><action android:name="android.accessibilityservice.AccessibilityService" /></intent-filter><meta-data android:name="android.accessibilityservice" android:resource="@xml/aira_accessibility_service" /></service>\n    </application>|' "$MANIFEST"
             echo "Added Accessibility Service to AndroidManifest"
           fi
 
-          # RECORD_AUDIO for mic / STT
-          if [ -f "$MANIFEST" ] && ! grep -q 'android.permission.RECORD_AUDIO' "$MANIFEST"; then
-            sed -i 's|<application|    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <application|' "$MANIFEST"
-            echo "Added RECORD_AUDIO permission"
+          # Live / stay-live foreground service
+          if [ -f "$MANIFEST" ] && ! grep -q "AiraLiveService" "$MANIFEST"; then
+            sed -i 's|</application>|        <service android:name=".AiraLiveService" android:exported="false" android:foregroundServiceType="microphone" />\n    </application>|' "$MANIFEST"
+            echo "Added AiraLiveService to AndroidManifest"
           fi
 
-          # Allow querying Termux package (RUN_COMMAND bridge)
+          # Permissions
+          if [ -f "$MANIFEST" ] && ! grep -q 'android.permission.RECORD_AUDIO' "$MANIFEST"; then
+            sed -i 's|<application|    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <application|' "$MANIFEST"
+            echo "Added RECORD_AUDIO"
+          fi
+
+          if [ -f "$MANIFEST" ] && ! grep -q 'android.permission.FOREGROUND_SERVICE' "$MANIFEST"; then
+            sed -i 's|<application|    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />\n    <application|' "$MANIFEST"
+            echo "Added FOREGROUND_SERVICE"
+          fi
+
+          if [ -f "$MANIFEST" ] && ! grep -q 'android.permission.FOREGROUND_SERVICE_MICROPHONE' "$MANIFEST"; then
+            sed -i 's|<application|    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />\n    <application|' "$MANIFEST"
+            echo "Added FOREGROUND_SERVICE_MICROPHONE"
+          fi
+
+          if [ -f "$MANIFEST" ] && ! grep -q 'android.permission.SYSTEM_ALERT_WINDOW' "$MANIFEST"; then
+            sed -i 's|<application|    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />\n    <application|' "$MANIFEST"
+            echo "Added SYSTEM_ALERT_WINDOW"
+          fi
+
+          if [ -f "$MANIFEST" ] && ! grep -q 'android.permission.POST_NOTIFICATIONS' "$MANIFEST"; then
+            sed -i 's|<application|    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n    <application|' "$MANIFEST"
+            echo "Added POST_NOTIFICATIONS"
+          fi
+
+          # Termux package visibility
           if [ -f "$MANIFEST" ] && ! grep -q 'android:name="com.termux"' "$MANIFEST"; then
             if grep -q '<queries>' "$MANIFEST"; then
               sed -i 's|<queries>|<queries>\n        <package android:name="com.termux" />|' "$MANIFEST"
             else
               sed -i 's|<application|<queries>\n        <package android:name="com.termux" />\n    </queries>\n    <application|' "$MANIFEST"
             fi
-            echo "Added Termux package to queries in AndroidManifest"
+            echo "Added Termux package to queries"
           fi
 
       - name: Build Debug APK
