@@ -20,20 +20,13 @@ import android.view.Gravity;
 import android.view.WindowManager;
 import android.widget.TextView;
 
-import androidx.core.app.NotificationCompat;
-
 import java.util.ArrayList;
-import java.util.Locale;
 
-/**
- * Stay-live: foreground service + optional overlay + repeated STT.
- * Results broadcast to app via Intent action AiraLiveService.ACTION_RESULT
- */
 public class AiraLiveService extends Service implements RecognitionListener {
 
     public static final String ACTION_RESULT = "com.aira.app.LIVE_STT_RESULT";
     public static final String EXTRA_TEXT = "text";
-    public static final String EXTRA_EVENT = "event"; // partial|final|error|started|stopped
+    public static final String EXTRA_EVENT = "event";
 
     private static final String TAG = "AiraLive";
     private static final String CHANNEL_ID = "aira_live";
@@ -48,26 +41,42 @@ public class AiraLiveService extends Service implements RecognitionListener {
     @Override
     public void onCreate() {
         super.onCreate();
-        createChannel();
-        startForeground(NOTIF_ID, buildNotification("Aira live — sun rahi hai"));
-        showBubble("Live");
+        try {
+            createChannel();
+            // MUST be quick — warna system app kill karta hai
+            startForeground(NOTIF_ID, buildNotification("Aira live — sun rahi hai"));
+        } catch (Exception e) {
+            Log.e(TAG, "onCreate foreground", e);
+        }
+        try {
+            showBubble("Live");
+        } catch (Exception e) {
+            Log.e(TAG, "bubble", e);
+        }
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (intent != null && "STOP".equals(intent.getAction())) {
-            stopLive();
-            stopSelf();
-            return START_NOT_STICKY;
+        try {
+            if (intent != null && "STOP".equals(intent.getAction())) {
+                stopLive();
+                stopForeground(true);
+                stopSelf();
+                return START_NOT_STICKY;
+            }
+            startLive();
+        } catch (Exception e) {
+            Log.e(TAG, "onStartCommand", e);
         }
-        startLive();
         return START_STICKY;
     }
 
     @Override
     public void onDestroy() {
-        stopLive();
-        removeBubble();
+        try {
+            stopLive();
+            removeBubble();
+        } catch (Exception ignored) {}
         super.onDestroy();
     }
 
@@ -127,11 +136,15 @@ public class AiraLiveService extends Service implements RecognitionListener {
     }
 
     private void broadcast(String event, String text) {
-        Intent i = new Intent(ACTION_RESULT);
-        i.setPackage(getPackageName());
-        i.putExtra(EXTRA_EVENT, event);
-        i.putExtra(EXTRA_TEXT, text != null ? text : "");
-        sendBroadcast(i);
+        try {
+            Intent i = new Intent(ACTION_RESULT);
+            i.setPackage(getPackageName());
+            i.putExtra(EXTRA_EVENT, event);
+            i.putExtra(EXTRA_TEXT, text != null ? text : "");
+            sendBroadcast(i);
+        } catch (Exception e) {
+            Log.e(TAG, "broadcast", e);
+        }
     }
 
     private void createChannel() {
@@ -146,11 +159,23 @@ public class AiraLiveService extends Service implements RecognitionListener {
 
     private Notification buildNotification(String text) {
         Intent open = getPackageManager().getLaunchIntentForPackage(getPackageName());
-        PendingIntent pi = PendingIntent.getActivity(
-            this, 0, open,
-            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            flags |= PendingIntent.FLAG_IMMUTABLE;
+        }
+        PendingIntent pi = PendingIntent.getActivity(this, 0, open != null ? open : new Intent(), flags);
 
-        return new NotificationCompat.Builder(this, CHANNEL_ID)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            return new Notification.Builder(this, CHANNEL_ID)
+                .setContentTitle("Aira")
+                .setContentText(text)
+                .setSmallIcon(android.R.drawable.ic_btn_speak_now)
+                .setContentIntent(pi)
+                .setOngoing(true)
+                .build();
+        }
+
+        return new Notification.Builder(this)
             .setContentTitle("Aira")
             .setContentText(text)
             .setSmallIcon(android.R.drawable.ic_btn_speak_now)
@@ -163,7 +188,7 @@ public class AiraLiveService extends Service implements RecognitionListener {
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
                 && !android.provider.Settings.canDrawOverlays(this)) {
-                Log.w(TAG, "No overlay permission");
+                Log.w(TAG, "No overlay permission — skip bubble");
                 return;
             }
             windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
@@ -196,7 +221,9 @@ public class AiraLiveService extends Service implements RecognitionListener {
 
     private void updateBubble(String label) {
         main.post(() -> {
-            if (bubble != null) bubble.setText("Aira " + label);
+            try {
+                if (bubble != null) bubble.setText("Aira " + label);
+            } catch (Exception ignored) {}
         });
     }
 
@@ -208,8 +235,6 @@ public class AiraLiveService extends Service implements RecognitionListener {
         } catch (Exception ignored) {}
         bubble = null;
     }
-
-    // --- RecognitionListener ---
 
     @Override public void onReadyForSpeech(Bundle params) {}
     @Override public void onBeginningOfSpeech() {}
