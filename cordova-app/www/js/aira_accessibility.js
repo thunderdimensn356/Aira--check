@@ -1,10 +1,12 @@
 /**
  * aira_accessibility.js
- * Bridge between Aira UI and native Accessibility Service
+ * Bridge: Accessibility + screenshot + stay-live
  */
 
 const AiraAccess = {
   _screenshotWaiter: null,
+  _live: false,
+  onLiveText: null, // set by chat.js: function(text) {}
 
   isAvailable() {
     return !!(window.AiraNative && typeof window.AiraNative.openApp === 'function');
@@ -77,10 +79,6 @@ const AiraAccess = {
     }
   },
 
-  /**
-   * Screenshot (Android 11+, Accessibility ON).
-   * Returns { ok, base64, error }
-   */
   captureScreen() {
     return new Promise((resolve) => {
       if (!window.AiraNative || typeof window.AiraNative.captureScreen !== 'function') {
@@ -90,7 +88,6 @@ const AiraAccess = {
 
       this._screenshotWaiter = resolve;
 
-      // safety timeout
       const t = setTimeout(() => {
         if (this._screenshotWaiter) {
           this._screenshotWaiter({ ok: false, error: 'timeout' });
@@ -110,7 +107,6 @@ const AiraAccess = {
     });
   },
 
-  /** Called from native after capture finishes */
   onScreenshotReady() {
     if (this._screenshotTimeout) {
       clearTimeout(this._screenshotTimeout);
@@ -139,6 +135,70 @@ const AiraAccess = {
     }
   },
 
+  // --- Stay live ---
+
+  canDrawOverlays() {
+    try {
+      if (window.AiraNative && typeof window.AiraNative.canDrawOverlays === 'function') {
+        return !!window.AiraNative.canDrawOverlays();
+      }
+    } catch (e) {}
+    return false;
+  },
+
+  openOverlaySettings() {
+    try {
+      if (window.AiraNative && typeof window.AiraNative.openOverlaySettings === 'function') {
+        window.AiraNative.openOverlaySettings();
+      }
+    } catch (e) {
+      console.warn(e);
+    }
+  },
+
+  startLive() {
+    if (!window.AiraNative || typeof window.AiraNative.startLive !== 'function') {
+      return { ok: false, error: 'no-native' };
+    }
+    if (!this.canDrawOverlays()) {
+      this.openOverlaySettings();
+      return { ok: false, error: 'need-overlay-permission' };
+    }
+    try {
+      const ok = !!window.AiraNative.startLive();
+      this._live = ok;
+      return { ok: ok, error: ok ? null : 'start-failed' };
+    } catch (e) {
+      return { ok: false, error: e.message || String(e) };
+    }
+  },
+
+  stopLive() {
+    try {
+      if (window.AiraNative && typeof window.AiraNative.stopLive === 'function') {
+        window.AiraNative.stopLive();
+      }
+    } catch (e) {}
+    this._live = false;
+    return { ok: true };
+  },
+
+  isLive() {
+    return !!this._live;
+  },
+
+  /** Called from native (MainActivity) when live STT final text aata hai */
+  onLiveStt(event, text) {
+    console.log('[LiveSTT]', event, text);
+    if (event === 'final' && text && typeof this.onLiveText === 'function') {
+      try {
+        this.onLiveText(text);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  },
+
   async searchInChrome(query) {
     const opened = await this.openApp('com.android.chrome');
     if (!opened) return false;
@@ -151,7 +211,6 @@ const AiraAccess = {
 
 window.AiraAccess = AiraAccess;
 
-// Native may call AiraChat.onScreenshotReady — forward to AiraAccess
 window.AiraChat = window.AiraChat || {};
 const _prevReady = window.AiraChat.onScreenshotReady;
 window.AiraChat.onScreenshotReady = function () {
@@ -161,7 +220,6 @@ window.AiraChat.onScreenshotReady = function () {
   if (typeof _prevReady === 'function') _prevReady();
 };
 
-// --- Termux bridge ---
 window.AiraTermuxBridge = {
   async run(cmd, timeoutMs) {
     timeoutMs = timeoutMs || 20000;
