@@ -1,6 +1,6 @@
 /**
  * chat.js
- * Gemini + voice + screenshot vision + open app fast-path
+ * Gemini + voice + screenshot + open app + open&look (Step 4)
  */
 
 const AiraChat = {
@@ -150,6 +150,20 @@ const AiraChat = {
     return false;
   },
 
+  /** open + dekh combo? */
+  wantsLookToo(cmd) {
+    const t = (cmd || '').toLowerCase();
+    return (
+      t.includes('screen') ||
+      t.includes('dekh') ||
+      t.includes('look') ||
+      t.includes('bata') ||
+      t.includes('describe') ||
+      t.includes('स्क्रीन') ||
+      t.includes('देख')
+    );
+  },
+
   resolveAppPackage(cmd) {
     const t = (cmd || '').toLowerCase().trim();
 
@@ -159,7 +173,8 @@ const AiraChat = {
         t.includes('kholo') ||
         t.includes('khol') ||
         t === 'yt' ||
-        t === 'youtube'
+        t === 'youtube' ||
+        t.includes('youtube')
       ) {
         return { name: 'YouTube', pkg: this.APP_PACKAGES.youtube };
       }
@@ -186,7 +201,7 @@ const AiraChat = {
     return null;
   },
 
-  async openAppByName(app) {
+  async openAppByName(app, alsoLook) {
     const btn = AiraUI.els.sendBtn;
     btn.disabled = true;
 
@@ -197,6 +212,14 @@ const AiraChat = {
         : app.name + ' nahi khul paya. App install / Accessibility check karo.';
       AiraUI.addMessage(msg, false);
       this.speak(msg);
+
+      // Step 4: open ke baad screen dekho (app foreground pe screenshot)
+      if (ok && alsoLook) {
+        await new Promise(function (r) { setTimeout(r, 2200); });
+        await this.handleLookAtScreen(
+          app.name + ' open hai. Screen par ab kya dikh raha hai? Short mein batao.'
+        );
+      }
     } catch (e) {
       const msg = app.name + ' open nahi ho paya.';
       AiraUI.addMessage(msg, false);
@@ -562,7 +585,7 @@ const AiraChat = {
     const input = AiraUI.els.userInput;
     const btn = AiraUI.els.sendBtn;
 
-    // Step 3: open app (youtube kholo, open chrome, ...)
+    // Step 3 + 4: open app, optional screen look
     const app = this.resolveAppPackage(cmd);
     if (app) {
       const wantsOpen =
@@ -571,11 +594,14 @@ const AiraChat = {
         cmd.includes('khol') ||
         cmd === 'yt' ||
         cmd === 'youtube' ||
-        cmd === app.name.toLowerCase();
+        cmd === app.name.toLowerCase() ||
+        cmd.includes('youtube') ||
+        cmd.includes(app.name.toLowerCase());
 
       if (wantsOpen) {
         input.value = '';
-        await this.openAppByName(app);
+        const alsoLook = this.wantsLookToo(cmd);
+        await this.openAppByName(app, alsoLook);
         return true;
       }
     }
