@@ -1,6 +1,6 @@
 /**
  * chat.js
- * Gemini + voice + screenshot + open + look + stay-live + click + type
+ * Gemini + voice + screenshot + open + look + live + click + type + writeMode
  */
 
 const AiraChat = {
@@ -8,6 +8,7 @@ const AiraChat = {
   apiKeys: [],
   currentKeyIndex: 0,
   modelRotator: null,
+  writeMode: 'hinglish', // hinglish | hindi | english
 
   APP_PACKAGES: {
     youtube: 'com.google.android.youtube',
@@ -28,7 +29,19 @@ const AiraChat = {
     playstore: 'com.android.vending',
     'play store': 'com.android.vending',
     spotify: 'com.spotify.music',
-    music: 'com.spotify.music'
+    music: 'com.spotify.music',
+    pw: 'xyz.penpencil.physicswala',
+    'physics wallah': 'xyz.penpencil.physicswala',
+    physicswallah: 'xyz.penpencil.physicswala',
+    phonepe: 'com.phonepe.app',
+    paytm: 'net.one97.paytm',
+    gpay: 'com.google.android.apps.nbu.paisa.user',
+    truecaller: 'com.truecaller',
+    hotstar: 'in.startv.hotstar',
+    jio: 'com.jio.media.ondemand',
+    amazon: 'in.amazon.mShop.android.shopping',
+    flipkart: 'com.flipkart.android',
+    netflix: 'com.netflix.mediaclient'
   },
 
   SELF_PHOTOS: [
@@ -59,6 +72,12 @@ const AiraChat = {
     this.bindClear();
     this.bindSaveSettings();
 
+    const wm = localStorage.getItem('aira_write_mode');
+
+    if (wm === 'hindi' || wm === 'english' || wm === 'hinglish') {
+      this.writeMode = wm;
+    }
+
     if (window.AiraAccess) {
       AiraAccess.onLiveText = (text) => {
         this.handleLiveUtterance(text);
@@ -66,21 +85,29 @@ const AiraChat = {
     }
 
     this.loadSettings().then(() => {
-      AiraUI.addMessage("Hi, I'm Aira. How can I support you today?", false);
+      AiraUI.addMessage(
+        "Hi, I'm Aira. How can I support you today?",
+        false
+      );
     });
   },
 
   onScreenshotReady() {
-    if (window.AiraAccess && typeof AiraAccess.onScreenshotReady === 'function') {
+    if (
+      window.AiraAccess &&
+      typeof AiraAccess.onScreenshotReady === 'function'
+    ) {
       AiraAccess.onScreenshotReady();
     }
   },
 
   async handleLiveUtterance(text) {
     text = (text || '').trim();
+
     if (!text || text.length < 2) return;
 
     const input = AiraUI.els.userInput;
+
     if (input) {
       input.value = text;
       input.style.height = 'auto';
@@ -90,18 +117,26 @@ const AiraChat = {
   },
 
   speak(text) {
-    if (window.AiraVoice && typeof AiraVoice.speak === 'function') {
+    if (
+      window.AiraVoice &&
+      typeof AiraVoice.speak === 'function'
+    ) {
       AiraVoice.speak(text);
     }
   },
 
   pickRandomSelfPhoto() {
     if (!this.SELF_PHOTOS.length) return null;
-    return this.SELF_PHOTOS[Math.floor(Math.random() * this.SELF_PHOTOS.length)];
+
+    return this.SELF_PHOTOS[
+      Math.floor(Math.random() * this.SELF_PHOTOS.length)
+    ];
   },
 
   pickRandomCaption() {
-    return this.SELF_CAPTIONS[Math.floor(Math.random() * this.SELF_CAPTIONS.length)];
+    return this.SELF_CAPTIONS[
+      Math.floor(Math.random() * this.SELF_CAPTIONS.length)
+    ];
   },
 
   isShowYourselfRequest(text) {
@@ -125,11 +160,17 @@ const AiraChat = {
 
   isLookAtScreenRequest(text) {
     const raw = (text || '').trim();
+
     if (!raw) return false;
+
     const t = raw.toLowerCase();
 
     const looksLikeOpenOnly =
-      (t.includes('open') || t.includes('kholo') || t.includes('khol')) &&
+      (
+        t.includes('open') ||
+        t.includes('kholo') ||
+        t.includes('khol')
+      ) &&
       !t.includes('dekh') &&
       !t.includes('screen') &&
       !t.includes('look') &&
@@ -140,32 +181,71 @@ const AiraChat = {
     if (looksLikeOpenOnly) return false;
 
     const en = [
-      'screen pe', 'screen par', 'screen per',
-      'on my screen', 'on the screen', 'on screen',
-      'look at screen', 'look at my screen', 'describe screen',
-      'what is on my screen', "what's on my screen", 'whats on my screen',
-      'what do you see', 'what can you see',
-      'screenshot', 'screen dekho', 'screen dekh',
-      'dekh ke bata', 'dekh ke bol', 'dekho kya',
-      'kya dikh', 'kya dikha', 'kya chal raha', 'kya chal rha',
-      'konsa app', 'kaun sa app', 'kaunsa app', 'which app',
-      'kya khula', 'kya open hai', 'kya chal raha hai',
-      'display pe', 'display par',
-      'ye kya hai screen', 'ab kya hai'
+      'screen pe',
+      'screen par',
+      'screen per',
+      'on my screen',
+      'on the screen',
+      'on screen',
+      'look at screen',
+      'look at my screen',
+      'describe screen',
+      'what is on my screen',
+      "what's on my screen",
+      'whats on my screen',
+      'what do you see',
+      'what can you see',
+      'screenshot',
+      'screen dekho',
+      'screen dekh',
+      'dekh ke bata',
+      'dekh ke bol',
+      'dekho kya',
+      'kya dikh',
+      'kya dikha',
+      'kya chal raha',
+      'kya chal rha',
+      'konsa app',
+      'kaun sa app',
+      'kaunsa app',
+      'which app',
+      'kya khula',
+      'kya open hai',
+      'kya chal raha hai',
+      'display pe',
+      'display par',
+      'ye kya hai screen',
+      'ab kya hai'
     ];
 
     for (let i = 0; i < en.length; i++) {
       if (t.includes(en[i])) return true;
     }
 
-    if (t === 'dekh' || t === 'look' || t === 'see') return true;
+    if (
+      t === 'dekh' ||
+      t === 'look' ||
+      t === 'see'
+    ) {
+      return true;
+    }
 
     const hi = [
-      'स्क्रीन', 'स्क्रिन', 'स्क्रीनशॉट',
-      'देख के बता', 'देख के बोल', 'देखो क्या',
-      'क्या दिख', 'क्या चल', 'क्या खुला',
-      'कौन सा ऐप', 'कौनसा ऐप', 'कौन सा एप',
-      'डिस्प्ले', 'क्या दिख रहा', 'क्या चल रहा'
+      'स्क्रीन',
+      'स्क्रिन',
+      'स्क्रीनशॉट',
+      'देख के बता',
+      'देख के बोल',
+      'देखो क्या',
+      'क्या दिख',
+      'क्या चल',
+      'क्या खुला',
+      'कौन सा ऐप',
+      'कौनसा ऐप',
+      'कौन सा एप',
+      'डिस्प्ले',
+      'क्या दिख रहा',
+      'क्या चल रहा'
     ];
 
     for (let j = 0; j < hi.length; j++) {
@@ -177,6 +257,7 @@ const AiraChat = {
 
   wantsLookToo(cmd) {
     const t = (cmd || '').toLowerCase();
+
     return (
       t.includes('screen') ||
       t.includes('dekh') ||
@@ -191,7 +272,11 @@ const AiraChat = {
   resolveAppPackage(cmd) {
     const t = (cmd || '').toLowerCase().trim();
 
-    if (t === 'yt' || t.includes('youtube') || /\byt\b/.test(t)) {
+    if (
+      t === 'yt' ||
+      t.includes('youtube') ||
+      /\byt\b/.test(t)
+    ) {
       if (
         t.includes('open') ||
         t.includes('kholo') ||
@@ -207,11 +292,37 @@ const AiraChat = {
       }
     }
 
+    // PW / Physics Wallah
+    if (
+      (
+        t.includes('pw') ||
+        t.includes('physics wallah') ||
+        t.includes('physicswallah')
+      ) &&
+      (
+        t.includes('open') ||
+        t.includes('kholo') ||
+        t.includes('khol') ||
+        t === 'pw'
+      )
+    ) {
+      return {
+        name: 'PW',
+        pkg: this.APP_PACKAGES.pw
+      };
+    }
+
     const entries = Object.keys(this.APP_PACKAGES);
 
     for (let i = 0; i < entries.length; i++) {
       const key = entries[i];
-      if (key === 'yt' || key === 'youtube') continue;
+
+      if (
+        key === 'yt' ||
+        key === 'youtube'
+      ) {
+        continue;
+      }
 
       if (
         t === key ||
@@ -222,7 +333,10 @@ const AiraChat = {
         t.includes(key + ' kholo') ||
         t.includes(key + ' khol')
       ) {
-        const label = key.charAt(0).toUpperCase() + key.slice(1);
+        const label =
+          key.charAt(0).toUpperCase() +
+          key.slice(1);
+
         return {
           name: label,
           pkg: this.APP_PACKAGES[key]
@@ -235,6 +349,7 @@ const AiraChat = {
 
   async openAppByName(app, alsoLook) {
     const btn = AiraUI.els.sendBtn;
+
     btn.disabled = true;
 
     try {
@@ -242,7 +357,8 @@ const AiraChat = {
 
       const msg = ok
         ? app.name + ' open kar diya.'
-        : app.name + ' nahi khul paya. App install / Accessibility check karo.';
+        : app.name +
+          ' nahi khul paya. App install / Accessibility check karo.';
 
       AiraUI.addMessage(msg, false);
       this.speak(msg);
@@ -253,11 +369,14 @@ const AiraChat = {
         });
 
         await this.handleLookAtScreen(
-          app.name + ' open hai. Screen par ab kya dikh raha hai? Short mein batao.'
+          app.name +
+          ' open hai. Screen par ab kya dikh raha hai? Short mein batao.'
         );
       }
     } catch (e) {
-      const msg = app.name + ' open nahi ho paya.';
+      const msg =
+        app.name + ' open nahi ho paya.';
+
       AiraUI.addMessage(msg, false);
       this.speak(msg);
     }
@@ -270,6 +389,7 @@ const AiraChat = {
     if (!rawText) return [];
 
     const keys = [];
+
     const lines = rawText
       .split(/\r?\n/)
       .map(l => l.trim())
@@ -277,10 +397,17 @@ const AiraChat = {
 
     for (let line of lines) {
       let key = line;
+
       if (line.includes('=')) {
-        key = line.substring(line.indexOf('=') + 1).trim();
+        key =
+          line
+            .substring(line.indexOf('=') + 1)
+            .trim();
       }
-      if (key) keys.push(key);
+
+      if (key) {
+        keys.push(key);
+      }
     }
 
     return keys;
@@ -288,60 +415,94 @@ const AiraChat = {
 
   updateEngineState() {
     if (this.apiKeys.length > 0) {
-      const model = this.modelRotator.getCurrentModel();
+      const model =
+        this.modelRotator.getCurrentModel();
+
       AiraUI.setEngineStatus(
         `Keys: ${this.apiKeys.length} | ${model}`,
         true
       );
     } else {
-      AiraUI.setEngineStatus('No Key Configured', false);
+      AiraUI.setEngineStatus(
+        'No Key Configured',
+        false
+      );
     }
   },
 
   bindSaveSettings() {
-    document.getElementById('saveSettingsBtn').onclick = async () => {
-      const name = AiraUI.els.cfgName.value.trim() || 'Aira';
-      AiraUI.setCompanionName(name);
-      localStorage.setItem('aira_cfg_name', name);
+    document
+      .getElementById('saveSettingsBtn')
+      .onclick = async () => {
 
-      const rawKeys = AiraUI.els.cfgApiKeys.value;
-      localStorage.setItem('aira_cfg_api', rawKeys);
+        const name =
+          AiraUI.els.cfgName.value.trim() ||
+          'Aira';
 
-      this.apiKeys = this.parseApiKeys(rawKeys);
-      this.currentKeyIndex = 0;
+        AiraUI.setCompanionName(name);
 
-      if (this.apiKeys.length > 0) {
-        try {
-          await this.modelRotator.init(this.apiKeys[0]);
-        } catch (e) {
-          console.error(e);
+        localStorage.setItem(
+          'aira_cfg_name',
+          name
+        );
+
+        const rawKeys =
+          AiraUI.els.cfgApiKeys.value;
+
+        localStorage.setItem(
+          'aira_cfg_api',
+          rawKeys
+        );
+
+        this.apiKeys =
+          this.parseApiKeys(rawKeys);
+
+        this.currentKeyIndex = 0;
+
+        if (this.apiKeys.length > 0) {
+          try {
+            await this.modelRotator.init(
+              this.apiKeys[0]
+            );
+          } catch (e) {
+            console.error(e);
+          }
         }
-      }
 
-      this.updateEngineState();
-      AiraUI.els.settingsModal.classList.remove('active');
-      AiraUI.addMessage(
-        `System: ${this.apiKeys.length} API key(s) saved.`,
-        false
-      );
-    };
+        this.updateEngineState();
+
+        AiraUI.els.settingsModal
+          .classList.remove('active');
+
+        AiraUI.addMessage(
+          `System: ${this.apiKeys.length} API key(s) saved.`,
+          false
+        );
+      };
   },
 
   async loadSettings() {
-    const name = localStorage.getItem('aira_cfg_name');
+    const name =
+      localStorage.getItem('aira_cfg_name');
 
     if (name) {
       AiraUI.els.cfgName.value = name;
       AiraUI.setCompanionName(name);
     }
 
-    const raw = localStorage.getItem('aira_cfg_api') || '';
+    const raw =
+      localStorage.getItem('aira_cfg_api') || '';
+
     AiraUI.els.cfgApiKeys.value = raw;
-    this.apiKeys = this.parseApiKeys(raw);
+
+    this.apiKeys =
+      this.parseApiKeys(raw);
 
     if (this.apiKeys.length > 0) {
       try {
-        await this.modelRotator.init(this.apiKeys[0]);
+        await this.modelRotator.init(
+          this.apiKeys[0]
+        );
       } catch (e) {
         console.error(e);
       }
@@ -354,8 +515,16 @@ const AiraChat = {
     if (!action) return;
 
     if (action === 'SHOW_SELF') {
-      const photo = this.pickRandomSelfPhoto();
-      if (photo) AiraUI.addImageMessage(photo, null);
+      const photo =
+        this.pickRandomSelfPhoto();
+
+      if (photo) {
+        AiraUI.addImageMessage(
+          photo,
+          null
+        );
+      }
+
       return;
     }
 
@@ -365,82 +534,176 @@ const AiraChat = {
     }
 
     if (action.startsWith('OPEN_APP:')) {
-      const pkg = action.replace('OPEN_APP:', '').trim();
-      if (pkg) await AiraAccess.openApp(pkg);
+      const pkg =
+        action
+          .replace('OPEN_APP:', '')
+          .trim();
+
+      if (pkg) {
+        await AiraAccess.openApp(pkg);
+      }
+
     } else if (action === 'GO_HOME') {
+
       await AiraAccess.goHome();
+
     } else if (action === 'GO_BACK') {
+
       await AiraAccess.goBack();
+
     } else if (action === 'OPEN_NOTIFICATIONS') {
+
       await AiraAccess.openNotifications();
+
     } else if (action === 'OPEN_RECENTS') {
+
       await AiraAccess.openRecents();
     }
   },
 
   getSystemPromptWithTime() {
     const base =
-      (window.AIRA_PERSONA && AIRA_PERSONA.getPrompt())
+      (
+        window.AIRA_PERSONA &&
+        AIRA_PERSONA.getPrompt()
+      )
         ? AIRA_PERSONA.getPrompt()
         : 'You are Aira, a helpful companion.';
 
     const now = new Date();
+
     const timeBlock =
       `\n\nCURRENT TIME (use when user asks day/date):\n` +
-      `Day: ${now.toLocaleDateString('en-IN', { weekday: 'long' })}\n` +
+      `Day: ${now.toLocaleDateString(
+        'en-IN',
+        { weekday: 'long' }
+      )}\n` +
       `Date: ${now.toLocaleDateString('en-IN')}\n` +
       `Time: ${now.toLocaleTimeString('en-IN')}\n`;
 
-    return base + timeBlock;
+    let langBlock =
+      '\n\nREPLY LANGUAGE / SCRIPT:\n';
+
+    if (this.writeMode === 'hindi') {
+
+      langBlock +=
+        '- User ne Hindi mode ON kiya hai.\n' +
+        '- Reply Devanagari Hindi mein do.\n' +
+        '- Hinglish/Roman mat likho.\n';
+
+    } else if (this.writeMode === 'english') {
+
+      langBlock +=
+        '- User ne English mode ON kiya hai.\n' +
+        '- Reply clear English only.\n';
+
+    } else {
+
+      langBlock +=
+        '- Default: Hinglish (Roman script).\n' +
+        '- Simple chat-style Hinglish.\n' +
+        '- Devanagari mat likho unless user asks Hindi.\n' +
+        '- Example: "Haan bilkul, abhi kar deti hoon."\n';
+    }
+
+    return (
+      base +
+      timeBlock +
+      langBlock
+    );
   },
 
   async callGemini() {
     if (this.apiKeys.length === 0) {
-      return { error: 'No API key configured. Open Settings → API.' };
+      return {
+        error:
+          'No API key configured. Open Settings → API.'
+      };
     }
 
-    const totalKeys = this.apiKeys.length;
-    const totalModels = this.modelRotator.count() || 8;
+    const totalKeys =
+      this.apiKeys.length;
 
-    for (let keyAttempt = 0; keyAttempt < totalKeys; keyAttempt++) {
-      const apiKey = this.apiKeys[this.currentKeyIndex];
+    const totalModels =
+      this.modelRotator.count() || 8;
 
-      for (let modelAttempt = 0; modelAttempt < totalModels; modelAttempt++) {
-        const model = this.modelRotator.getCurrentModel();
+    for (
+      let keyAttempt = 0;
+      keyAttempt < totalKeys;
+      keyAttempt++
+    ) {
+      const apiKey =
+        this.apiKeys[this.currentKeyIndex];
+
+      for (
+        let modelAttempt = 0;
+        modelAttempt < totalModels;
+        modelAttempt++
+      ) {
+        const model =
+          this.modelRotator.getCurrentModel();
 
         try {
+
+          // FIXED GEMINI URL
           const url =
             `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
-          const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              system_instruction: {
-                parts: [{ text: this.getSystemPromptWithTime() }]
+          const response =
+            await fetch(url, {
+              method: 'POST',
+
+              headers: {
+                'Content-Type':
+                  'application/json'
               },
-              contents: this.conversationHistory.slice(-10)
-            })
-          });
+
+              body: JSON.stringify({
+                system_instruction: {
+                  parts: [{
+                    text:
+                      this.getSystemPromptWithTime()
+                  }]
+                },
+
+                contents:
+                  this.conversationHistory
+                    .slice(-10)
+              })
+            });
 
           let data;
 
           try {
-            data = await response.json();
+            data =
+              await response.json();
           } catch (e) {
-            throw new Error(`Invalid API response (${response.status})`);
+            throw new Error(
+              `Invalid API response (${response.status})`
+            );
           }
 
           if (
             response.ok &&
-            data.candidates?.[0]?.content?.parts?.[0]?.text
+            data.candidates?.[0]
+              ?.content
+              ?.parts?.[0]
+              ?.text
           ) {
             return {
-              text: data.candidates[0].content.parts[0].text.trim()
+              text:
+                data
+                  .candidates[0]
+                  .content
+                  .parts[0]
+                  .text
+                  .trim()
             };
           }
 
-          const errMsg = data?.error?.message || `HTTP ${response.status}`;
+          const errMsg =
+            data?.error?.message ||
+            `HTTP ${response.status}`;
 
           console.warn(
             `Gemini error | key ${this.currentKeyIndex + 1} | model ${model}:`,
@@ -449,9 +712,8 @@ const AiraChat = {
 
           if (
             response.status === 503 ||
-            /high demand/i.test(errMsg) ||
-            /overloaded/i.test(errMsg) ||
-            /unavailable/i.test(errMsg)
+            /high demand|overloaded|unavailable/i
+              .test(errMsg)
           ) {
             this.modelRotator.next();
             continue;
@@ -459,17 +721,16 @@ const AiraChat = {
 
           if (
             response.status === 429 ||
-            /quota/i.test(errMsg) ||
-            /rate limit/i.test(errMsg) ||
-            /resource_exhausted/i.test(errMsg)
+            /quota|rate limit|resource_exhausted/i
+              .test(errMsg)
           ) {
             break;
           }
 
           if (
             response.status === 404 ||
-            /not found/i.test(errMsg) ||
-            /not supported/i.test(errMsg)
+            /not found|not supported/i
+              .test(errMsg)
           ) {
             this.modelRotator.next();
             continue;
@@ -481,105 +742,163 @@ const AiraChat = {
             response.status === 403
           ) {
             if (
-              /api key/i.test(errMsg) ||
-              /permission/i.test(errMsg) ||
-              /unauthorized/i.test(errMsg) ||
-              /forbidden/i.test(errMsg)
+              /api key|permission|unauthorized|forbidden/i
+                .test(errMsg)
             ) {
               break;
             }
           }
 
-          return { error: errMsg };
+          return {
+            error: errMsg
+          };
+
         } catch (err) {
-          console.error(`Request failed for model ${model}:`, err);
+
+          console.error(
+            `Request failed for model ${model}:`,
+            err
+          );
+
           this.modelRotator.next();
         }
       }
 
-      this.currentKeyIndex = (this.currentKeyIndex + 1) % totalKeys;
+      this.currentKeyIndex =
+        (this.currentKeyIndex + 1) %
+        totalKeys;
+
       this.modelRotator.reset();
     }
 
     return {
-      error: 'All API keys and models failed. Please try again later.'
+      error:
+        'All API keys and models failed. Please try again later.'
     };
   },
 
-  async callGeminiVision(base64Jpeg, userText) {
+  async callGeminiVision(
+    base64Jpeg,
+    userText
+  ) {
     if (this.apiKeys.length === 0) {
-      return { error: 'No API key configured. Open Settings → API.' };
+      return {
+        error:
+          'No API key configured. Open Settings → API.'
+      };
     }
 
     const prompt =
-      (userText && userText.trim()) ||
-      'Describe what is on the screen. Be clear and helpful. Reply in the same language the user used if possible.';
+      (
+        userText &&
+        userText.trim()
+      ) ||
+      'Describe what is on the screen. Be clear and helpful.';
 
-    const totalKeys = this.apiKeys.length;
-    const totalModels = this.modelRotator.count() || 8;
+    const totalKeys =
+      this.apiKeys.length;
 
-    for (let keyAttempt = 0; keyAttempt < totalKeys; keyAttempt++) {
-      const apiKey = this.apiKeys[this.currentKeyIndex];
+    const totalModels =
+      this.modelRotator.count() || 8;
 
-      for (let modelAttempt = 0; modelAttempt < totalModels; modelAttempt++) {
-        const model = this.modelRotator.getCurrentModel();
+    for (
+      let keyAttempt = 0;
+      keyAttempt < totalKeys;
+      keyAttempt++
+    ) {
+      const apiKey =
+        this.apiKeys[this.currentKeyIndex];
+
+      for (
+        let modelAttempt = 0;
+        modelAttempt < totalModels;
+        modelAttempt++
+      ) {
+        const model =
+          this.modelRotator.getCurrentModel();
 
         try {
+
+          // FIXED GEMINI VISION URL
           const url =
             `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
-          const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              system_instruction: {
-                parts: [{
-                  text:
-                    this.getSystemPromptWithTime() +
-                    '\n\nYou can see a screenshot of the user device. Describe accurately. Do not invent UI that is not visible.'
-                }]
+          const response =
+            await fetch(url, {
+              method: 'POST',
+
+              headers: {
+                'Content-Type':
+                  'application/json'
               },
-              contents: [{
-                role: 'user',
-                parts: [
-                  { text: prompt },
-                  {
-                    inline_data: {
-                      mime_type: 'image/jpeg',
-                      data: base64Jpeg
+
+              body: JSON.stringify({
+                system_instruction: {
+                  parts: [{
+                    text:
+                      this.getSystemPromptWithTime() +
+                      '\n\nYou can see a screenshot. Describe accurately. Do not invent UI.'
+                  }]
+                },
+
+                contents: [{
+                  role: 'user',
+
+                  parts: [
+                    {
+                      text: prompt
+                    },
+                    {
+                      inline_data: {
+                        mime_type:
+                          'image/jpeg',
+
+                        data:
+                          base64Jpeg
+                      }
                     }
-                  }
-                ]
-              }]
-            })
-          });
+                  ]
+                }]
+              })
+            });
 
           let data;
 
           try {
-            data = await response.json();
+            data =
+              await response.json();
           } catch (e) {
-            throw new Error(`Invalid API response (${response.status})`);
+            throw new Error(
+              `Invalid API response (${response.status})`
+            );
           }
 
           if (
             response.ok &&
-            data.candidates?.[0]?.content?.parts?.[0]?.text
+            data.candidates?.[0]
+              ?.content
+              ?.parts?.[0]
+              ?.text
           ) {
             return {
-              text: data.candidates[0].content.parts[0].text.trim()
+              text:
+                data
+                  .candidates[0]
+                  .content
+                  .parts[0]
+                  .text
+                  .trim()
             };
           }
 
-          const errMsg = data?.error?.message || `HTTP ${response.status}`;
-          console.warn('Vision error', model, errMsg);
+          const errMsg =
+            data?.error?.message ||
+            `HTTP ${response.status}`;
 
           if (
             response.status === 503 ||
-            /high demand/i.test(errMsg) ||
-            /overloaded/i.test(errMsg) ||
-            /not found/i.test(errMsg) ||
-            /not supported/i.test(errMsg)
+            /high demand|overloaded|not found|not supported/i
+              .test(errMsg)
           ) {
             this.modelRotator.next();
             continue;
@@ -592,85 +911,230 @@ const AiraChat = {
             break;
           }
 
-          return { error: errMsg };
+          return {
+            error: errMsg
+          };
+
         } catch (err) {
+
           console.error(err);
           this.modelRotator.next();
         }
       }
 
-      this.currentKeyIndex = (this.currentKeyIndex + 1) % totalKeys;
+      this.currentKeyIndex =
+        (this.currentKeyIndex + 1) %
+        totalKeys;
+
       this.modelRotator.reset();
     }
 
     return {
-      error: 'Vision request failed on all keys/models.'
+      error:
+        'Vision request failed on all keys/models.'
     };
   },
 
   async handleLookAtScreen(userText) {
-    const btn = AiraUI.els.sendBtn;
+    const btn =
+      AiraUI.els.sendBtn;
+
     btn.disabled = true;
+
     AiraUI.showTyping();
 
-    const shot = await AiraAccess.captureScreen();
+    const shot =
+      await AiraAccess.captureScreen();
 
-    if (!shot.ok || !shot.base64) {
+    if (
+      !shot.ok ||
+      !shot.base64
+    ) {
       AiraUI.hideTyping();
 
-      let msg = 'Screenshot nahi le payi.';
+      let msg =
+        'Screenshot nahi le payi.';
 
-      if (shot.error === 'no-service') {
-        msg = 'Accessibility ON karo (Settings → Accessibility → Aira), phir try karo.';
-      } else if (shot.error === 'android11-required') {
-        msg = 'Screenshot ke liye Android 11+ chahiye.';
-      } else if (shot.error) {
-        msg = 'Screenshot fail: ' + shot.error;
+      if (
+        shot.error ===
+        'no-service'
+      ) {
+        msg =
+          'Accessibility ON karo (Settings → Accessibility → Aira), phir try karo.';
+
+      } else if (
+        shot.error ===
+        'android11-required'
+      ) {
+        msg =
+          'Screenshot ke liye Android 11+ chahiye.';
+
+      } else if (
+        shot.error
+      ) {
+        msg =
+          'Screenshot fail: ' +
+          shot.error;
       }
 
-      AiraUI.addMessage(msg, false);
+      AiraUI.addMessage(
+        msg,
+        false
+      );
+
       this.speak(msg);
 
       btn.disabled = false;
+
       return;
     }
 
-    const result = await this.callGeminiVision(shot.base64, userText);
+    const result =
+      await this.callGeminiVision(
+        shot.base64,
+        userText
+      );
 
     AiraUI.hideTyping();
 
     if (result.text) {
-      AiraUI.addMessage(result.text, false);
-      this.speak(result.text);
+
+      AiraUI.addMessage(
+        result.text,
+        false
+      );
+
+      this.speak(
+        result.text
+      );
 
       this.conversationHistory.push({
         role: 'user',
         parts: [{
-          text: '[Screen share] ' + (userText || 'What is on my screen?')
+          text:
+            '[Screen share] ' +
+            (
+              userText ||
+              'What is on my screen?'
+            )
         }]
       });
 
       this.conversationHistory.push({
         role: 'model',
-        parts: [{ text: result.text }]
+        parts: [{
+          text: result.text
+        }]
       });
+
     } else {
+
       AiraUI.addMessage(
-        'Error: ' + (result.error || 'Vision failed'),
+        'Error: ' +
+        (
+          result.error ||
+          'Vision failed'
+        ),
         false
       );
     }
 
     this.updateEngineState();
+
     btn.disabled = false;
+
     AiraUI.els.userInput.focus();
   },
 
   async handleFastPath(cmd) {
-    const input = AiraUI.els.userInput;
-    const btn = AiraUI.els.sendBtn;
+    const input =
+      AiraUI.els.userInput;
 
-    // Step 6: stay live
+    const btn =
+      AiraUI.els.sendBtn;
+
+    // WRITE LANGUAGE
+    if (
+      cmd.includes('hindi mein likh') ||
+      cmd.includes('hindi mai likh') ||
+      cmd.includes('hindi me likh') ||
+      cmd.includes('हिंदी में लिख') ||
+      cmd === 'hindi mode'
+    ) {
+      input.value = '';
+
+      this.writeMode = 'hindi';
+
+      localStorage.setItem(
+        'aira_write_mode',
+        'hindi'
+      );
+
+      const msg =
+        'Theek hai — ab Hindi mein likhungi.';
+
+      AiraUI.addMessage(msg, false);
+      this.speak(msg);
+
+      return true;
+    }
+
+    if (
+      cmd.includes('english mein likh') ||
+      cmd.includes('english mai likh') ||
+      cmd.includes('english me likh') ||
+      cmd.includes('in english') ||
+      cmd === 'english mode'
+    ) {
+      input.value = '';
+
+      this.writeMode = 'english';
+
+      localStorage.setItem(
+        'aira_write_mode',
+        'english'
+      );
+
+      const msg =
+        'Okay — I will write in English now.';
+
+      AiraUI.addMessage(msg, false);
+      this.speak(msg);
+
+      return true;
+    }
+
+    if (
+      cmd.includes('hinglish mein likh') ||
+      cmd.includes('hinglish mai likh') ||
+      cmd.includes('hinglish me likh') ||
+      cmd.includes('roman mein likh') ||
+      cmd === 'hinglish mode'
+    ) {
+      input.value = '';
+
+      this.writeMode =
+        'hinglish';
+
+      localStorage.setItem(
+        'aira_write_mode',
+        'hinglish'
+      );
+
+      const msg =
+        'Theek — ab Hinglish mein likhungi.';
+
+      AiraUI.addMessage(
+        msg,
+        false
+      );
+
+      this.speak(msg);
+
+      return true;
+    }
+
+    // STAY LIVE
     if (
       cmd === 'stay live' ||
       cmd === 'live on' ||
@@ -682,19 +1146,37 @@ const AiraChat = {
     ) {
       input.value = '';
 
-      const r = AiraAccess.startLive();
+      const r =
+        AiraAccess.startLive();
 
       let msg;
 
       if (r.ok) {
-        msg = 'Live mode ON. Ab doosri app kholo — main sun rahi hoon. Band: "live band".';
-      } else if (r.error === 'need-overlay-permission') {
-        msg = 'Display over other apps ON karo (settings khul gayi), phir phir se "stay live" bolo.';
+
+        msg =
+          'Live mode ON. Ab doosri app kholo — main sun rahi hoon. Band: "live band".';
+
+      } else if (
+        r.error ===
+        'need-overlay-permission'
+      ) {
+
+        msg =
+          'Display over other apps ON karo (settings khul gayi), phir phir se "stay live" bolo.';
+
       } else {
-        msg = 'Live start nahi hua: ' + (r.error || 'unknown') + '. Naya APK / permission check karo.';
+
+        msg =
+          'Live start nahi hua: ' +
+          (r.error || 'unknown') +
+          '. Naya APK / permission check karo.';
       }
 
-      AiraUI.addMessage(msg, false);
+      AiraUI.addMessage(
+        msg,
+        false
+      );
+
       this.speak(msg);
 
       return true;
@@ -712,18 +1194,25 @@ const AiraChat = {
 
       AiraAccess.stopLive();
 
-      const msg = 'Live mode OFF.';
+      const msg =
+        'Live mode OFF.';
 
-      AiraUI.addMessage(msg, false);
+      AiraUI.addMessage(
+        msg,
+        false
+      );
+
       this.speak(msg);
 
       return true;
     }
 
-    // Step 7: click by visible text
+    // CLICK
     {
       let clickTarget = null;
-      const c = cmd.trim();
+
+      const c =
+        cmd.trim();
 
       let m =
         c.match(/^click\s+(.+)$/i) ||
@@ -734,8 +1223,14 @@ const AiraChat = {
         c.match(/^(.+?)\s+pe\s+dabao$/i) ||
         c.match(/^(.+?)\s+par\s+dabao$/i);
 
-      if (m && m[1]) {
-        clickTarget = m[1].replace(/["']/g, '').trim();
+      if (
+        m &&
+        m[1]
+      ) {
+        clickTarget =
+          m[1]
+            .replace(/["']/g, '')
+            .trim();
       }
 
       if (
@@ -747,17 +1242,38 @@ const AiraChat = {
         btn.disabled = true;
 
         try {
-          const ok = await AiraAccess.clickByText(clickTarget);
+
+          const ok =
+            await AiraAccess
+              .clickByText(
+                clickTarget
+              );
 
           const msg = ok
-            ? '"' + clickTarget + '" pe click kar diya.'
-            : '"' + clickTarget + '" nahi mila / click nahi hua. Screen pe wahi text dikhna chahiye.';
+            ? '"' +
+              clickTarget +
+              '" pe click kar diya.'
+            : '"' +
+              clickTarget +
+              '" nahi mila / click nahi hua. Screen pe wahi text dikhna chahiye.';
 
-          AiraUI.addMessage(msg, false);
+          AiraUI.addMessage(
+            msg,
+            false
+          );
+
           this.speak(msg);
+
         } catch (e) {
-          const msg = 'Click fail ho gaya.';
-          AiraUI.addMessage(msg, false);
+
+          const msg =
+            'Click fail ho gaya.';
+
+          AiraUI.addMessage(
+            msg,
+            false
+          );
+
           this.speak(msg);
         }
 
@@ -768,10 +1284,12 @@ const AiraChat = {
       }
     }
 
-    // Step 8: type into focused field
+    // TYPE
     {
       let typeTextVal = null;
-      const c = cmd.trim();
+
+      const c =
+        cmd.trim();
 
       let m =
         c.match(/^type\s+(.+)$/i) ||
@@ -779,8 +1297,12 @@ const AiraChat = {
         c.match(/^yahan\s+likh(?:o|e)?\s*[:\-]?\s*(.+)$/i) ||
         c.match(/^write\s+(.+)$/i);
 
-      if (m && m[1]) {
-        typeTextVal = m[1].trim();
+      if (
+        m &&
+        m[1]
+      ) {
+        typeTextVal =
+          m[1].trim();
       }
 
       if (
@@ -791,17 +1313,35 @@ const AiraChat = {
         btn.disabled = true;
 
         try {
-          const ok = await AiraAccess.typeText(typeTextVal);
+
+          const ok =
+            await AiraAccess
+              .typeText(
+                typeTextVal
+              );
 
           const msg = ok
-            ? 'Type kar diya: ' + typeTextVal
+            ? 'Type kar diya: ' +
+              typeTextVal
             : 'Type nahi hua. Pehle input box pe click / focus karo, phir bolo.';
 
-          AiraUI.addMessage(msg, false);
+          AiraUI.addMessage(
+            msg,
+            false
+          );
+
           this.speak(msg);
+
         } catch (e) {
-          const msg = 'Type fail ho gaya.';
-          AiraUI.addMessage(msg, false);
+
+          const msg =
+            'Type fail ho gaya.';
+
+          AiraUI.addMessage(
+            msg,
+            false
+          );
+
           this.speak(msg);
         }
 
@@ -812,31 +1352,39 @@ const AiraChat = {
       }
     }
 
-    // Step 3 + 4: open app, optional screen look
-    const app = this.resolveAppPackage(cmd);
+    // OPEN APP
+    const app =
+      this.resolveAppPackage(cmd);
 
     if (app) {
+
       const wantsOpen =
         cmd.includes('open') ||
         cmd.includes('kholo') ||
         cmd.includes('khol') ||
         cmd === 'yt' ||
         cmd === 'youtube' ||
+        cmd === 'pw' ||
         cmd === app.name.toLowerCase() ||
         cmd.includes('youtube') ||
-        cmd.includes(app.name.toLowerCase());
+        cmd.includes(
+          app.name.toLowerCase()
+        );
 
       if (wantsOpen) {
+
         input.value = '';
 
-        const alsoLook = this.wantsLookToo(cmd);
-
-        await this.openAppByName(app, alsoLook);
+        await this.openAppByName(
+          app,
+          this.wantsLookToo(cmd)
+        );
 
         return true;
       }
     }
 
+    // TERMINAL
     if (
       cmd === 'open terminal' ||
       cmd === 'terminal kholo' ||
@@ -849,31 +1397,53 @@ const AiraChat = {
 
       AiraUI.openTerminal();
 
-      const msg = 'Terminal open kar diya.';
+      const msg =
+        'Terminal open kar diya.';
 
-      AiraUI.addMessage(msg, false);
+      AiraUI.addMessage(
+        msg,
+        false
+      );
+
       this.speak(msg);
 
       return true;
     }
 
-    if (cmd === 'go home' || cmd === 'home') {
+    // HOME
+    if (
+      cmd === 'go home' ||
+      cmd === 'home'
+    ) {
       input.value = '';
       btn.disabled = true;
 
       try {
-        const ok = await AiraAccess.goHome();
+
+        const ok =
+          await AiraAccess.goHome();
 
         const msg = ok
           ? 'Home pe le aayi.'
           : 'Home nahi ja payi. Accessibility check karo.';
 
-        AiraUI.addMessage(msg, false);
-        this.speak(msg);
-      } catch (e) {
-        const msg = 'Home action nahi chal paya.';
+        AiraUI.addMessage(
+          msg,
+          false
+        );
 
-        AiraUI.addMessage(msg, false);
+        this.speak(msg);
+
+      } catch (e) {
+
+        const msg =
+          'Home action nahi chal paya.';
+
+        AiraUI.addMessage(
+          msg,
+          false
+        );
+
         this.speak(msg);
       }
 
@@ -883,23 +1453,40 @@ const AiraChat = {
       return true;
     }
 
-    if (cmd === 'go back' || cmd === 'back') {
+    // BACK
+    if (
+      cmd === 'go back' ||
+      cmd === 'back'
+    ) {
       input.value = '';
       btn.disabled = true;
 
       try {
-        const ok = await AiraAccess.goBack();
+
+        const ok =
+          await AiraAccess.goBack();
 
         const msg = ok
           ? 'Back kar diya.'
           : 'Back nahi ho paya.';
 
-        AiraUI.addMessage(msg, false);
-        this.speak(msg);
-      } catch (e) {
-        const msg = 'Back action nahi chal paya.';
+        AiraUI.addMessage(
+          msg,
+          false
+        );
 
-        AiraUI.addMessage(msg, false);
+        this.speak(msg);
+
+      } catch (e) {
+
+        const msg =
+          'Back action nahi chal paya.';
+
+        AiraUI.addMessage(
+          msg,
+          false
+        );
+
         this.speak(msg);
       }
 
@@ -909,6 +1496,7 @@ const AiraChat = {
       return true;
     }
 
+    // NOTIFICATIONS
     if (
       cmd === 'open notifications' ||
       cmd === 'notifications'
@@ -917,18 +1505,32 @@ const AiraChat = {
       btn.disabled = true;
 
       try {
-        const ok = await AiraAccess.openNotifications();
+
+        const ok =
+          await AiraAccess
+            .openNotifications();
 
         const msg = ok
           ? 'Notifications open kiye.'
           : 'Notifications nahi khul paye.';
 
-        AiraUI.addMessage(msg, false);
-        this.speak(msg);
-      } catch (e) {
-        const msg = 'Notifications open nahi ho paye.';
+        AiraUI.addMessage(
+          msg,
+          false
+        );
 
-        AiraUI.addMessage(msg, false);
+        this.speak(msg);
+
+      } catch (e) {
+
+        const msg =
+          'Notifications open nahi ho paye.';
+
+        AiraUI.addMessage(
+          msg,
+          false
+        );
+
         this.speak(msg);
       }
 
@@ -938,6 +1540,7 @@ const AiraChat = {
       return true;
     }
 
+    // RECENTS
     if (
       cmd === 'open recents' ||
       cmd === 'recents'
@@ -946,18 +1549,32 @@ const AiraChat = {
       btn.disabled = true;
 
       try {
-        const ok = await AiraAccess.openRecents();
+
+        const ok =
+          await AiraAccess
+            .openRecents();
 
         const msg = ok
           ? 'Recents open kiye.'
           : 'Recents nahi khul paye.';
 
-        AiraUI.addMessage(msg, false);
-        this.speak(msg);
-      } catch (e) {
-        const msg = 'Recents open nahi ho paye.';
+        AiraUI.addMessage(
+          msg,
+          false
+        );
 
-        AiraUI.addMessage(msg, false);
+        this.speak(msg);
+
+      } catch (e) {
+
+        const msg =
+          'Recents open nahi ho paye.';
+
+        AiraUI.addMessage(
+          msg,
+          false
+        );
+
         this.speak(msg);
       }
 
@@ -971,99 +1588,182 @@ const AiraChat = {
   },
 
   async sendMessage() {
-    const input = AiraUI.els.userInput;
-    const btn = AiraUI.els.sendBtn;
-    const text = input.value.trim();
+    const input =
+      AiraUI.els.userInput;
+
+    const btn =
+      AiraUI.els.sendBtn;
+
+    const text =
+      input.value.trim();
 
     if (!text) return;
 
-    AiraUI.addMessage(text, true);
+    AiraUI.addMessage(
+      text,
+      true
+    );
 
-    const cmd = text.toLowerCase().trim();
+    const cmd =
+      text
+        .toLowerCase()
+        .trim();
 
-    if (await this.handleFastPath(cmd)) {
+    if (
+      await this.handleFastPath(cmd)
+    ) {
       return;
     }
 
-    if (this.isLookAtScreenRequest(text)) {
+    if (
+      this.isLookAtScreenRequest(
+        text
+      )
+    ) {
       input.value = '';
-      input.style.height = 'auto';
+      input.style.height =
+        'auto';
 
-      await this.handleLookAtScreen(text);
+      await this.handleLookAtScreen(
+        text
+      );
 
       return;
     }
 
     input.value = '';
-    input.style.height = 'auto';
+    input.style.height =
+      'auto';
+
     btn.disabled = true;
 
     AiraUI.showTyping();
 
     this.conversationHistory.push({
       role: 'user',
-      parts: [{ text }]
+      parts: [{
+        text
+      }]
     });
 
-    const result = await this.callGemini();
+    const result =
+      await this.callGemini();
 
     AiraUI.hideTyping();
 
     if (result.text) {
-      let reply = result.text;
+
+      let reply =
+        result.text;
 
       const actionMatch =
-        reply.match(/\[\[ACTION:([^\]]+)\]\]/);
+        reply.match(
+          /\[\[ACTION:([^\]]+)\]\]/
+        );
 
       let action = null;
 
       if (actionMatch) {
-        action = actionMatch[1].trim();
 
-        reply = reply
-          .replace(/\[\[ACTION:[^\]]+\]\]/g, '')
-          .trim();
+        action =
+          actionMatch[1]
+            .trim();
+
+        reply =
+          reply
+            .replace(
+              /\[\[ACTION:[^\]]+\]\]/g,
+              ''
+            )
+            .trim();
       }
 
       if (reply) {
-        AiraUI.addMessage(reply, false);
+
+        AiraUI.addMessage(
+          reply,
+          false
+        );
+
         this.speak(reply);
       }
 
       if (action) {
-        if (action === 'SHOW_SELF') {
-          const photo = this.pickRandomSelfPhoto();
+
+        if (
+          action ===
+          'SHOW_SELF'
+        ) {
+
+          const photo =
+            this.pickRandomSelfPhoto();
 
           if (photo) {
-            AiraUI.addImageMessage(photo, null);
+            AiraUI.addImageMessage(
+              photo,
+              null
+            );
           }
-        } else if (action === 'OPEN_TERMINAL') {
+
+        } else if (
+          action ===
+          'OPEN_TERMINAL'
+        ) {
+
           AiraUI.openTerminal();
+
         } else {
-          await this.runDeviceAction(action);
+
+          await this.runDeviceAction(
+            action
+          );
         }
       }
 
       this.conversationHistory.push({
         role: 'model',
-        parts: [{ text: result.text }]
+        parts: [{
+          text: result.text
+        }]
       });
+
     } else {
-      if (this.isShowYourselfRequest(text)) {
-        const photo = this.pickRandomSelfPhoto();
+
+      if (
+        this.isShowYourselfRequest(
+          text
+        )
+      ) {
+
+        const photo =
+          this.pickRandomSelfPhoto();
 
         if (photo) {
-          const cap = this.pickRandomCaption();
 
-          AiraUI.addImageMessage(photo, cap);
+          const cap =
+            this.pickRandomCaption();
+
+          AiraUI.addImageMessage(
+            photo,
+            cap
+          );
+
           this.speak(cap);
+
         } else {
+
           AiraUI.addMessage(
-            'Error: ' + (result.error || 'Something went wrong'),
+            'Error: ' +
+            (
+              result.error ||
+              'Something went wrong'
+            ),
             false
           );
         }
+
       } else {
+
         if (
           this.conversationHistory[
             this.conversationHistory.length - 1
@@ -1073,7 +1773,11 @@ const AiraChat = {
         }
 
         AiraUI.addMessage(
-          'Error: ' + (result.error || 'Something went wrong'),
+          'Error: ' +
+          (
+            result.error ||
+            'Something went wrong'
+          ),
           false
         );
       }
@@ -1082,35 +1786,48 @@ const AiraChat = {
     this.updateEngineState();
 
     btn.disabled = false;
+
     input.focus();
   },
 
   bindSend() {
-    AiraUI.els.sendBtn.onclick = () => this.sendMessage();
+    AiraUI.els.sendBtn.onclick =
+      () => this.sendMessage();
 
-    AiraUI.els.userInput.onkeydown = (e) => {
-      if (
-        e.key === 'Enter' &&
-        !e.shiftKey
-      ) {
-        e.preventDefault();
-        this.sendMessage();
-      }
-    };
+    AiraUI.els.userInput.onkeydown =
+      (e) => {
+
+        if (
+          e.key === 'Enter' &&
+          !e.shiftKey
+        ) {
+          e.preventDefault();
+
+          this.sendMessage();
+        }
+      };
   },
 
   bindClear() {
-    document.getElementById('clearChatBtn').onclick = () => {
-      if (confirm('Clear all messages?')) {
-        AiraUI.clearMessages();
-        this.conversationHistory = [];
+    document
+      .getElementById('clearChatBtn')
+      .onclick = () => {
 
-        AiraUI.addMessage(
-          "Hi, I'm Aira. How can I support you today?",
-          false
-        );
-      }
-    };
+        if (
+          confirm(
+            'Clear all messages?'
+          )
+        ) {
+          AiraUI.clearMessages();
+
+          this.conversationHistory = [];
+
+          AiraUI.addMessage(
+            "Hi, I'm Aira. How can I support you today?",
+            false
+          );
+        }
+      };
   }
 };
 
