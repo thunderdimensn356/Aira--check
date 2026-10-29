@@ -1,12 +1,12 @@
 /**
  * aira_accessibility.js
- * Bridge: Accessibility + screenshot + stay-live
+ * Bridge: Accessibility + screenshot + stay-live + clickAt + hybrid target
  */
 
 const AiraAccess = {
   _screenshotWaiter: null,
   _live: false,
-  onLiveText: null, // set by chat.js: function(text) {}
+  onLiveText: null,
 
   isAvailable() {
     return !!(window.AiraNative && typeof window.AiraNative.openApp === 'function');
@@ -32,6 +32,71 @@ const AiraAccess = {
     } catch (e) {
       return Promise.resolve(false);
     }
+  },
+
+  clickAt(x, y) {
+    if (!this.isAvailable()) return Promise.resolve(false);
+    try {
+      if (typeof window.AiraNative.clickAt !== 'function') {
+        return Promise.resolve(false);
+      }
+      return Promise.resolve(!!window.AiraNative.clickAt(x | 0, y | 0));
+    } catch (e) {
+      return Promise.resolve(false);
+    }
+  },
+
+  findCenterByText(text) {
+    if (!this.isAvailable()) return Promise.resolve(null);
+    try {
+      if (typeof window.AiraNative.findCenterByText !== 'function') {
+        return Promise.resolve(null);
+      }
+      const s = window.AiraNative.findCenterByText(text || '');
+      if (!s || s.indexOf(',') < 0) return Promise.resolve(null);
+      const parts = s.split(',');
+      const x = parseInt(parts[0], 10);
+      const y = parseInt(parts[1], 10);
+      if (isNaN(x) || isNaN(y)) return Promise.resolve(null);
+      return Promise.resolve({ x: x, y: y });
+    } catch (e) {
+      return Promise.resolve(null);
+    }
+  },
+
+  /**
+   * Hybrid click:
+   * 1) memory (label + optional app) → clickAt x,y
+   * 2) clickByText(matchText or label)
+   * 3) findCenterByText → clickAt
+   */
+  async clickTarget(label, appPackage) {
+    const lab = (label || '').trim();
+    if (!lab) return false;
+
+    // 1) trained memory
+    if (window.AiraMemory && typeof AiraMemory.find === 'function') {
+      const rec = AiraMemory.find(lab, appPackage || null);
+      if (rec && typeof rec.x === 'number' && typeof rec.y === 'number') {
+        const ok = await this.clickAt(rec.x, rec.y);
+        if (ok) return true;
+      }
+      if (rec && rec.matchText) {
+        const ok2 = await this.clickByText(rec.matchText);
+        if (ok2) return true;
+      }
+    }
+
+    // 2) live text / description
+    if (await this.clickByText(lab)) return true;
+
+    // 3) bounds center then gesture
+    const center = await this.findCenterByText(lab);
+    if (center) {
+      return await this.clickAt(center.x, center.y);
+    }
+
+    return false;
   },
 
   typeText(text) {
@@ -135,8 +200,6 @@ const AiraAccess = {
     }
   },
 
-  // --- Stay live ---
-
   canDrawOverlays() {
     try {
       if (window.AiraNative && typeof window.AiraNative.canDrawOverlays === 'function') {
@@ -187,7 +250,6 @@ const AiraAccess = {
     return !!this._live;
   },
 
-  /** Called from native (MainActivity) when live STT final text aata hai */
   onLiveStt(event, text) {
     console.log('[LiveSTT]', event, text);
     if (event === 'final' && text && typeof this.onLiveText === 'function') {
