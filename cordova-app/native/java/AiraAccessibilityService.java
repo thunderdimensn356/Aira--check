@@ -1,9 +1,12 @@
 package com.aira.app;
 
 import android.accessibilityservice.AccessibilityService;
+import android.accessibilityservice.GestureDescription;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.ColorSpace;
+import android.graphics.Path;
+import android.graphics.Rect;
 import android.hardware.HardwareBuffer;
 import android.os.Build;
 import android.os.Bundle;
@@ -80,7 +83,7 @@ public class AiraAccessibilityService extends AccessibilityService {
 
     /**
      * Click by visible text OR icon contentDescription.
-     * Tries strict match first, then fuzzy contains.
+     * Strict first, then fuzzy.
      */
     public boolean clickByText(String text) {
         if (text == null) return false;
@@ -139,13 +142,85 @@ public class AiraAccessibilityService extends AccessibilityService {
         return false;
     }
 
+    /**
+     * Gesture tap at screen coordinates (API 24+).
+     * Used for trained memory targets (e.g. YT magnifying glass).
+     */
+    public boolean clickAt(int x, int y) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+            Log.e(TAG, "clickAt requires API 24+");
+            return false;
+        }
+        try {
+            Path path = new Path();
+            path.moveTo((float) x, (float) y);
+            GestureDescription.StrokeDescription stroke =
+                new GestureDescription.StrokeDescription(path, 0, 80);
+            GestureDescription gesture =
+                new GestureDescription.Builder().addStroke(stroke).build();
+            boolean ok = dispatchGesture(gesture, null, null);
+            Log.d(TAG, "clickAt(" + x + "," + y + ") -> " + ok);
+            return ok;
+        } catch (Exception e) {
+            Log.e(TAG, "clickAt failed", e);
+            return false;
+        }
+    }
+
+    /**
+     * Find first node matching text/desc; return center as "x,y" or empty.
+     */
+    public String findCenterByText(String query) {
+        if (query == null || query.trim().isEmpty()) return "";
+        AccessibilityNodeInfo root = getRootInActiveWindow();
+        if (root == null) return "";
+        int[] xy = findCenter(root, query.trim(), true);
+        if (xy == null) xy = findCenter(root, query.trim(), false);
+        if (xy == null) return "";
+        return xy[0] + "," + xy[1];
+    }
+
+    private int[] findCenter(AccessibilityNodeInfo node, String query, boolean strict) {
+        if (node == null) return null;
+        String q = query.toLowerCase().trim();
+
+        CharSequence nodeText = node.getText();
+        CharSequence desc = node.getContentDescription();
+        String t = nodeText != null ? nodeText.toString().trim() : "";
+        String d = desc != null ? desc.toString().trim() : "";
+
+        boolean match = false;
+        if (strict) {
+            match = t.equalsIgnoreCase(query) || d.equalsIgnoreCase(query);
+        } else {
+            String tl = t.toLowerCase();
+            String dl = d.toLowerCase();
+            match =
+                (!t.isEmpty() && (tl.contains(q) || q.contains(tl))) ||
+                (!d.isEmpty() && (dl.contains(q) || q.contains(dl)));
+        }
+
+        if (match) {
+            Rect r = new Rect();
+            node.getBoundsInScreen(r);
+            if (r.width() > 0 && r.height() > 0) {
+                return new int[]{ r.centerX(), r.centerY() };
+            }
+        }
+
+        for (int i = 0; i < node.getChildCount(); i++) {
+            int[] found = findCenter(node.getChild(i), query, strict);
+            if (found != null) return found;
+        }
+        return null;
+    }
+
     public boolean typeText(String text) {
         AccessibilityNodeInfo root = getRootInActiveWindow();
         if (root == null) return false;
 
         AccessibilityNodeInfo focus = root.findFocus(AccessibilityNodeInfo.FOCUS_INPUT);
         if (focus == null) {
-            // try focused window editable by scanning
             focus = findEditable(root);
         }
         if (focus == null) return false;
@@ -182,10 +257,6 @@ public class AiraAccessibilityService extends AccessibilityService {
         performGlobalAction(GLOBAL_ACTION_RECENTS);
     }
 
-    /**
-     * Screenshot via Accessibility (Android 11+).
-     * Callback: base64 JPEG (no data: prefix) or error code.
-     */
     public void captureScreenshot(final ScreenshotCallback callback) {
         if (callback == null) return;
 
