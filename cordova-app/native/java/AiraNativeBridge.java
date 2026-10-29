@@ -42,6 +42,26 @@ public class AiraNativeBridge {
         return service.clickByText(text);
     }
 
+    /** Gesture tap at screen pixels (trained targets / magnifying glass). */
+    @JavascriptInterface
+    public boolean clickAt(int x, int y) {
+        AiraAccessibilityService service = AiraAccessibilityService.getInstance();
+        if (service == null) return false;
+        return service.clickAt(x, y);
+    }
+
+    /**
+     * Find center of node matching text/desc.
+     * Returns "x,y" or "" if not found.
+     */
+    @JavascriptInterface
+    public String findCenterByText(String text) {
+        AiraAccessibilityService service = AiraAccessibilityService.getInstance();
+        if (service == null) return "";
+        String s = service.findCenterByText(text);
+        return s != null ? s : "";
+    }
+
     @JavascriptInterface
     public boolean typeText(String text) {
         AiraAccessibilityService service = AiraAccessibilityService.getInstance();
@@ -121,7 +141,6 @@ public class AiraNativeBridge {
         return lastScreenshotError != null ? lastScreenshotError : "";
     }
 
-    /** Stay-live: can draw overlay bubble? */
     @JavascriptInterface
     public boolean canDrawOverlays() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -130,7 +149,6 @@ public class AiraNativeBridge {
         return true;
     }
 
-    /** Open system screen: Display over other apps */
     @JavascriptInterface
     public void openOverlaySettings() {
         try {
@@ -145,7 +163,6 @@ public class AiraNativeBridge {
         }
     }
 
-    /** Start foreground live STT + bubble */
     @JavascriptInterface
     public boolean startLive() {
         try {
@@ -162,7 +179,6 @@ public class AiraNativeBridge {
         }
     }
 
-    /** Stop live service */
     @JavascriptInterface
     public boolean stopLive() {
         try {
