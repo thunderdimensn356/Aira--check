@@ -78,27 +78,61 @@ public class AiraAccessibilityService extends AccessibilityService {
         }
     }
 
+    /**
+     * Click by visible text OR icon contentDescription.
+     * Tries strict match first, then fuzzy contains.
+     */
     public boolean clickByText(String text) {
+        if (text == null) return false;
+        text = text.trim();
+        if (text.isEmpty()) return false;
+
         AccessibilityNodeInfo root = getRootInActiveWindow();
         if (root == null) return false;
-        return findAndClick(root, text);
+
+        if (findAndClick(root, text, true)) return true;
+        return findAndClick(root, text, false);
     }
 
-    private boolean findAndClick(AccessibilityNodeInfo node, String text) {
+    private boolean findAndClick(AccessibilityNodeInfo node, String query, boolean strict) {
         if (node == null) return false;
+
+        String q = query.toLowerCase().trim();
 
         CharSequence nodeText = node.getText();
         CharSequence desc = node.getContentDescription();
+        String t = nodeText != null ? nodeText.toString().trim() : "";
+        String d = desc != null ? desc.toString().trim() : "";
 
-        if ((nodeText != null && nodeText.toString().equalsIgnoreCase(text)) ||
-            (desc != null && desc.toString().equalsIgnoreCase(text))) {
-            if (node.isClickable()) {
-                return node.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+        boolean match = false;
+        if (strict) {
+            match = t.equalsIgnoreCase(query) || d.equalsIgnoreCase(query);
+        } else {
+            String tl = t.toLowerCase();
+            String dl = d.toLowerCase();
+            match =
+                (!t.isEmpty() && (tl.contains(q) || q.contains(tl))) ||
+                (!d.isEmpty() && (dl.contains(q) || q.contains(dl)));
+        }
+
+        if (match) {
+            AccessibilityNodeInfo clickable = node;
+            while (clickable != null && !clickable.isClickable()) {
+                AccessibilityNodeInfo parent = clickable.getParent();
+                if (parent == null) break;
+                clickable = parent;
+            }
+            if (clickable != null && clickable.isClickable()) {
+                boolean ok = clickable.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                if (ok) {
+                    Log.d(TAG, "Clicked: text=[" + t + "] desc=[" + d + "] strict=" + strict);
+                    return true;
+                }
             }
         }
 
         for (int i = 0; i < node.getChildCount(); i++) {
-            if (findAndClick(node.getChild(i), text)) {
+            if (findAndClick(node.getChild(i), query, strict)) {
                 return true;
             }
         }
@@ -110,11 +144,26 @@ public class AiraAccessibilityService extends AccessibilityService {
         if (root == null) return false;
 
         AccessibilityNodeInfo focus = root.findFocus(AccessibilityNodeInfo.FOCUS_INPUT);
+        if (focus == null) {
+            // try focused window editable by scanning
+            focus = findEditable(root);
+        }
         if (focus == null) return false;
 
         Bundle args = new Bundle();
         args.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text);
         return focus.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, args);
+    }
+
+    private AccessibilityNodeInfo findEditable(AccessibilityNodeInfo node) {
+        if (node == null) return null;
+        if (node.isEditable() && node.isFocused()) return node;
+        if (node.isEditable()) return node;
+        for (int i = 0; i < node.getChildCount(); i++) {
+            AccessibilityNodeInfo found = findEditable(node.getChild(i));
+            if (found != null) return found;
+        }
+        return null;
     }
 
     public void goHome() {
@@ -135,7 +184,7 @@ public class AiraAccessibilityService extends AccessibilityService {
 
     /**
      * Screenshot via Accessibility (Android 11+).
-     * Callback on main thread: base64 PNG (no data: prefix) or error code.
+     * Callback: base64 JPEG (no data: prefix) or error code.
      */
     public void captureScreenshot(final ScreenshotCallback callback) {
         if (callback == null) return;
@@ -167,7 +216,6 @@ public class AiraAccessibilityService extends AccessibilityService {
                                 if (bmp == null) {
                                     err = "copy-failed";
                                 } else {
-                                    // size control for API
                                     int maxW = 1080;
                                     if (bmp.getWidth() > maxW) {
                                         float s = maxW / (float) bmp.getWidth();
