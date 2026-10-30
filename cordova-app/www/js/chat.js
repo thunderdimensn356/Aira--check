@@ -339,67 +339,53 @@ const AiraChat = {
     AiraUI.els.userInput.focus();
   },
 
-  /** YouTube search: open → search UI → focus field → type → submit */
+  /** B1: type only — no final Search click (YT mic avoid) */
   async youtubeSearch(query) {
     const btn = AiraUI.els.sendBtn;
-
     btn.disabled = true;
 
     const q = (query || '').trim();
-
     if (!q) {
       btn.disabled = false;
       return;
     }
 
     const ytPkg = this.APP_PACKAGES.youtube;
-
-    AiraUI.addMessage(
-      'YouTube pe search: ' + q,
-      false
-    );
+    AiraUI.addMessage('YouTube pe search: ' + q, false);
 
     const opened = await AiraAccess.openApp(ytPkg);
-
     if (!opened) {
       const msg = 'YouTube open nahi hua.';
-
       AiraUI.addMessage(msg, false);
       this.speak(msg);
-
       btn.disabled = false;
       return;
     }
 
     await new Promise((r) => setTimeout(r, 2200));
 
-    let clicked =
-      await AiraAccess.clickTarget('search', ytPkg);
+    let clicked = await AiraAccess.clickTarget('search', ytPkg);
 
+    if (!clicked) {
+      clicked = await AiraAccess.clickByText('Search YouTube');
+    }
+    if (!clicked) {
+      const c1 = await AiraAccess.findCenterByText('Search YouTube');
+      if (c1) clicked = await AiraAccess.clickAt(c1.x, c1.y);
+    }
     if (!clicked) {
       clicked = await AiraAccess.clickByText('Search');
     }
-
     if (!clicked) {
-      const center =
-        await AiraAccess.findCenterByText('Search');
-
-      if (center) {
-        clicked =
-          await AiraAccess.clickAt(
-            center.x,
-            center.y
-          );
-      }
+      const c2 = await AiraAccess.findCenterByText('Search');
+      if (c2) clicked = await AiraAccess.clickAt(c2.x, c2.y);
     }
 
     if (!clicked) {
       const msg =
         'Search button nahi mila. Sikhao: dhyan rakhana search at X Y';
-
       AiraUI.addMessage(msg, false);
       this.speak(msg);
-
       btn.disabled = false;
       return;
     }
@@ -407,32 +393,21 @@ const AiraChat = {
     await new Promise((r) => setTimeout(r, 1200));
 
     await AiraAccess.clickByText('Search YouTube');
-
     await new Promise((r) => setTimeout(r, 500));
 
-    const typed =
-      await AiraAccess.typeText(q);
-
+    const typed = await AiraAccess.typeText(q);
     if (!typed) {
-      const msg =
-        'Type nahi hua. Box pe tap karke likho: type ' + q;
-
+      const msg = 'Type nahi hua. Box pe tap karke: type ' + q;
       AiraUI.addMessage(msg, false);
       this.speak(msg);
-
       btn.disabled = false;
       return;
     }
 
-    await new Promise((r) => setTimeout(r, 600));
+    // B1 FIX: yahan clickByText('Search') MAT karo — mic/voice search khulta hai
 
-    await AiraAccess.clickByText('Search');
-
-    const msg =
-      'Search try kar diya: ' + q;
-
+    const msg = 'Search type ho gaya: ' + q;
     AiraUI.addMessage(msg, false);
-    this.speak(msg);
 
     btn.disabled = false;
     AiraUI.els.userInput.focus();
