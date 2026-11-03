@@ -735,3 +735,804 @@ const AiraChat = {
       return { error: 'No API key configured. Open Settings → API.' };
     }
 
+    const prompt =
+      (userText && userText.trim()) ||
+      'Describe what is on the screen.';
+
+    const totalKeys = this.apiKeys.length;
+    const totalModels = this.modelRotator.count() || 8;
+
+    for (let keyAttempt = 0; keyAttempt < totalKeys; keyAttempt++) {
+      const apiKey = this.apiKeys[this.currentKeyIndex];
+
+      for (let modelAttempt = 0; modelAttempt < totalModels; modelAttempt++) {
+        const model = this.modelRotator.getCurrentModel();
+
+        try {
+          // FIXED API URL
+          const url =
+            'https://generativelanguage.googleapis.com/v1beta/models/' +
+            encodeURIComponent(model) +
+            ':generateContent?key=' +
+            encodeURIComponent(apiKey);
+
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              system_instruction: {
+                parts: [{
+                  text:
+                    this.getSystemPromptWithTime() +
+                    '\n\nYou can see a screenshot. Describe accurately. Do not invent UI.'
+                }]
+              },
+              contents: [{
+                role: 'user',
+                parts: [
+                  { text: prompt },
+                  {
+                    inline_data: {
+                      mime_type: 'image/jpeg',
+                      data: base64Jpeg
+                    }
+                  }
+                ]
+              }]
+            })
+          });
+
+          let data;
+
+          try {
+            data = await response.json();
+          } catch (e) {
+            throw new Error('Invalid API response (' + response.status + ')');
+          }
+
+          if (
+            response.ok &&
+            data.candidates &&
+            data.candidates[0] &&
+            data.candidates[0].content &&
+            data.candidates[0].content.parts &&
+            data.candidates[0].content.parts[0] &&
+            data.candidates[0].content.parts[0].text
+          ) {
+            return {
+              text: data.candidates[0].content.parts[0].text.trim()
+            };
+          }
+
+          const errMsg =
+            (data && data.error && data.error.message) ||
+            ('HTTP ' + response.status);
+
+          if (
+            response.status === 503 ||
+            /high demand|overloaded|not found|not supported/i.test(errMsg)
+          ) {
+            this.modelRotator.next();
+            continue;
+          }
+
+          if (response.status === 429 || /quota/i.test(errMsg)) {
+            break;
+          }
+
+          return { error: errMsg };
+
+        } catch (err) {
+          console.error(err);
+          this.modelRotator.next();
+        }
+      }
+
+      this.currentKeyIndex = (this.currentKeyIndex + 1) % totalKeys;
+      this.modelRotator.reset();
+    }
+
+    return {
+      error: 'Vision request failed on all keys/models.'
+    };
+  },
+
+  async handleLookAtScreen(userText) {
+    const btn = AiraUI.els.sendBtn;
+    btn.disabled = true;
+
+    AiraUI.showTyping();
+
+    const shot = await AiraAccess.captureScreen();
+
+    if (!shot.ok || !shot.base64) {
+      AiraUI.hideTyping();
+
+      let msg = 'Screenshot nahi le payi.';
+
+      if (shot.error === 'no-service') {
+        msg = 'Accessibility ON karo (Settings → Accessibility → Aira).';
+      } else if (shot.error === 'android11-required') {
+        msg = 'Screenshot ke liye Android 11+ chahiye.';
+      } else if (shot.error) {
+        msg = 'Screenshot fail: ' + shot.error;
+      }
+
+      AiraUI.addMessage(msg, false);
+      this.speak(msg);
+
+      btn.disabled = false;
+      return;
+    }
+
+    const result = await this.callGeminiVision(shot.base64, userText);
+
+    AiraUI.hideTyping();
+
+    if (result.text) {
+      AiraUI.addMessage(result.text, false);
+      this.speak(result.text);
+
+      this.conversationHistory.push({
+        role: 'user',
+        parts: [{
+          text: '[Screen share] ' + (userText || 'What is on my screen?')
+        }]
+      });
+
+      this.conversationHistory.push({
+        role: 'model',
+        parts: [{ text: result.text }]
+      });
+
+      this.persistChat();
+
+    } else {
+      AiraUI.addMessage(
+        'Error: ' + (result.error || 'Vision failed'),
+        false
+      );
+    }
+
+    this.updateEngineState();
+    btn.disabled = false;
+    AiraUI.els.userInput.focus();
+  },
+
+  async handleFastPath(cmd) {
+    const input = AiraUI.els.userInput;
+    const btn = AiraUI.els.sendBtn;
+
+    // CURSOR ON / OFF
+    if (
+      cmd === 'cursor on' ||
+      cmd === 'cursor on karo' ||
+      cmd === 'cursor dikhao' ||
+      cmd === 'show cursor'
+    ) {
+      input.value = '';
+
+      const r = AiraAccess.showCursor();
+      let msg;
+
+      if (r.ok) {
+        msg = 'Cursor ON. Right = joystick, Left = L/R click.';
+      } else if (r.error === 'need-overlay-permission') {
+        msg = 'Display over other apps ON karo, phir "cursor on".';
+      } else {
+        msg = 'Cursor start nahi hua: ' + (r.error || 'unknown');
+      }
+
+      AiraUI.addMessage(msg, false);
+      this.speak(msg);
+      return true;
+    }
+
+    if (
+      cmd === 'cursor off' ||
+      cmd === 'cursor band' ||
+      cmd === 'hide cursor' ||
+      cmd === 'cursor hide'
+    ) {
+      input.value = '';
+      AiraAccess.hideCursor();
+
+      AiraUI.addMessage('Cursor OFF.', false);
+      this.speak('Cursor OFF.');
+      return true;
+    }
+
+    // YOUTUBE SEARCH
+    {
+      let q = null;
+
+      const m =
+        cmd.match(/^(?:yt|youtube)\s+pe\s+search\s+(?:karo\s+)?(.+)$/i) ||
+        cmd.match(/^youtube\s+search\s*[:\-]?\s*(.+)$/i) ||
+        cmd.match(/^yt\s+search\s*[:\-]?\s*(.+)$/i) ||
+        cmd.match(/^search\s+on\s+youtube\s+(.+)$/i);
+
+      if (m && m[1]) q = m[1].trim();
+
+      if (q) {
+        input.value = '';
+        await this.youtubeSearch(q);
+        return true;
+      }
+    }
+
+    // GOOGLE SEARCH
+    {
+      let q = null;
+
+      const m =
+        cmd.match(/^(?:google)\s+pe\s+search\s+(?:karo\s+)?(.+)$/i) ||
+        cmd.match(/^google\s+search\s*[:\-]?\s*(.+)$/i) ||
+        cmd.match(/^open\s+google\s+search\s+(.+)$/i) ||
+        cmd.match(/^search\s+on\s+google\s+(.+)$/i);
+
+      if (m && m[1]) q = m[1].trim();
+
+      if (q) {
+        input.value = '';
+        await this.googleSearch(q);
+        return true;
+      }
+    }
+
+    // OPEN GOOGLE
+    if (
+      cmd === 'open google' ||
+      cmd === 'google kholo' ||
+      cmd === 'google khol' ||
+      cmd === 'google open'
+    ) {
+      input.value = '';
+      btn.disabled = true;
+
+      let ok = await AiraAccess.openApp(this.APP_PACKAGES.google);
+
+      if (!ok) {
+        ok = await AiraAccess.openApp(this.APP_PACKAGES.chrome);
+
+        if (ok) {
+          AiraUI.addMessage('Google app nahi mili — Chrome open.', false);
+          this.speak('Chrome open.');
+        } else {
+          AiraUI.addMessage('Google / Chrome nahi khul paye.', false);
+          this.speak('Open fail.');
+        }
+      } else {
+        AiraUI.addMessage('Google open kar diya.', false);
+        this.speak('Google open.');
+      }
+
+      btn.disabled = false;
+      input.focus();
+      return true;
+    }
+
+    // MEMORY SUMMARY
+    if (
+      cmd === 'yaad dikhao' ||
+      cmd === 'memory dikhao' ||
+      cmd.includes('kya yaad')
+    ) {
+      input.value = '';
+
+      const sum =
+        window.AiraMemory && AiraMemory.summary
+          ? AiraMemory.summary()
+          : 'Memory module nahi mila (aira_memory.js).';
+
+      AiraUI.addMessage(sum, false);
+      return true;
+    }
+
+    // REMEMBER COORDINATES
+    {
+      const mAt = cmd.match(
+        /dhyan\s+rakh(?:ana|na|o)?\s+(\w+)\s+at\s+(\d+)\s+(\d+)/i
+      );
+
+      if (mAt && window.AiraMemory) {
+        input.value = '';
+
+        const label = mAt[1];
+        const x = parseInt(mAt[2], 10);
+        const y = parseInt(mAt[3], 10);
+
+        const app =
+          label.toLowerCase() === 'search'
+            ? this.APP_PACKAGES.youtube
+            : '*';
+
+        const r = AiraMemory.remember({
+          label: label,
+          app: app,
+          x: x,
+          y: y,
+          matchText: label === 'search' ? 'Search' : label,
+          note: 'trained coords'
+        });
+
+        const msg = r.ok
+          ? 'Yaad rakha: ' + label + ' @(' + x + ',' + y + ')'
+          : 'Yaad nahi rakh payi.';
+
+        AiraUI.addMessage(msg, false);
+        this.speak(msg);
+        return true;
+      }
+    }
+
+    // AUTOMATIC MEMORY
+    if (
+      window.AiraMemory &&
+      (cmd.startsWith('dhyan rakh') || cmd.startsWith('dhyan rakho'))
+    ) {
+      const rest = cmd.replace(/^dhyan\s+rakh(?:ana|na|o)?\s*/i, '').trim();
+
+      if (rest && rest.indexOf(' at ') === -1) {
+        input.value = '';
+
+        const label = rest.split(/\s+/)[0] || 'search';
+
+        const center = await AiraAccess.findCenterByText(
+          label === 'search' ? 'Search' : label
+        );
+
+        if (center) {
+          AiraMemory.remember({
+            label: label,
+            app: label.toLowerCase() === 'search'
+              ? this.APP_PACKAGES.youtube
+              : '*',
+            x: center.x,
+            y: center.y,
+            matchText: label === 'search' ? 'Search' : label,
+            note: 'auto bounds'
+          });
+
+          AiraUI.addMessage(
+            'Yaad rakha (auto): ' + label + ' @(' + center.x + ',' + center.y + ')',
+            false
+          );
+
+        } else {
+          AiraUI.addMessage(
+            'Screen pe "' + label + '" nahi mila.',
+            false
+          );
+        }
+
+        return true;
+      }
+    }
+
+    // HINDI MODE
+    if (
+      cmd.includes('hindi mein likh') ||
+      cmd.includes('hindi mai likh') ||
+      cmd.includes('hindi me likh') ||
+      cmd.includes('हिंदी में लिख') ||
+      cmd === 'hindi mode'
+    ) {
+      input.value = '';
+      this.writeMode = 'hindi';
+      localStorage.setItem('aira_write_mode', 'hindi');
+
+      AiraUI.addMessage('Theek hai — ab Hindi mein likhungi.', false);
+      this.speak('Theek hai — ab Hindi mein likhungi.');
+      return true;
+    }
+
+    // ENGLISH MODE
+    if (
+      cmd.includes('english mein likh') ||
+      cmd.includes('english mai likh') ||
+      cmd.includes('english me likh') ||
+      cmd.includes('in english') ||
+      cmd === 'english mode'
+    ) {
+      input.value = '';
+      this.writeMode = 'english';
+      localStorage.setItem('aira_write_mode', 'english');
+
+      AiraUI.addMessage('Okay — I will write in English now.', false);
+      this.speak('Okay — I will write in English now.');
+      return true;
+    }
+
+    // HINGLISH MODE
+    if (
+      cmd.includes('hinglish mein likh') ||
+      cmd.includes('hinglish mai likh') ||
+      cmd.includes('hinglish me likh') ||
+      cmd.includes('roman mein likh') ||
+      cmd === 'hinglish mode'
+    ) {
+      input.value = '';
+      this.writeMode = 'hinglish';
+      localStorage.setItem('aira_write_mode', 'hinglish');
+
+      AiraUI.addMessage('Theek — ab Hinglish mein likhungi.', false);
+      this.speak('Theek — ab Hinglish mein likhungi.');
+      return true;
+    }
+
+    // LIVE MODE ON
+    if (
+      cmd === 'stay live' ||
+      cmd === 'live on' ||
+      cmd === 'live' ||
+      cmd.includes('sunte raho') ||
+      cmd.includes('sunti raho') ||
+      cmd.includes('stay live') ||
+      cmd.includes('live mode')
+    ) {
+      input.value = '';
+
+      const r = AiraAccess.startLive();
+      let msg;
+
+      if (r.ok) {
+        msg = 'Live mode ON. Band: "live band".';
+      } else if (r.error === 'need-overlay-permission') {
+        msg = 'Display over other apps ON karo, phir "stay live".';
+      } else {
+        msg = 'Live start nahi hua: ' + (r.error || 'unknown');
+      }
+
+      AiraUI.addMessage(msg, false);
+      this.speak(msg);
+      return true;
+    }
+
+    // LIVE MODE OFF
+    if (
+      cmd === 'live band' ||
+      cmd === 'stop live' ||
+      cmd === 'live off' ||
+      cmd.includes('live band') ||
+      cmd.includes('suna band') ||
+      cmd.includes('sunna band')
+    ) {
+      input.value = '';
+      AiraAccess.stopLive();
+
+      AiraUI.addMessage('Live mode OFF.', false);
+      this.speak('Live mode OFF.');
+      return true;
+    }
+
+    // CLICK COMMAND
+    {
+      let clickTarget = null;
+      const c = cmd.trim();
+
+      const m =
+        c.match(/^click\s+(.+)$/i) ||
+        c.match(/^(.+?)\s+pe\s+click(?:\s+karo)?$/i) ||
+        c.match(/^(.+?)\s+par\s+click(?:\s+karo)?$/i) ||
+        c.match(/^(.+?)\s+dabao$/i) ||
+        c.match(/^dabao\s+(.+)$/i);
+
+      if (m && m[1]) {
+        clickTarget = m[1].replace(/["']/g, '').trim();
+      }
+
+      if (clickTarget && clickTarget.length > 0 && clickTarget.length < 40) {
+        input.value = '';
+        btn.disabled = true;
+
+        try {
+          const ok = await AiraAccess.clickTarget(clickTarget);
+
+          const msg = ok
+            ? '"' + clickTarget + '" pe click kar diya.'
+            : '"' + clickTarget + '" nahi mila.';
+
+          AiraUI.addMessage(msg, false);
+          this.speak(msg);
+
+        } catch (e) {
+          AiraUI.addMessage('Click fail.', false);
+        }
+
+        btn.disabled = false;
+        input.focus();
+        return true;
+      }
+    }
+
+    // TYPE COMMAND
+    {
+      let typeTextVal = null;
+      const c = cmd.trim();
+
+      const m =
+        c.match(/^type\s+(.+)$/i) ||
+        c.match(/^likh(?:o|e)?\s*[:\-]?\s*(.+)$/i) ||
+        c.match(/^yahan\s+likh(?:o|e)?\s*[:\-]?\s*(.+)$/i) ||
+        c.match(/^write\s+(.+)$/i);
+
+      if (m && m[1]) {
+        typeTextVal = m[1].trim();
+      }
+
+      if (typeTextVal) {
+        input.value = '';
+        btn.disabled = true;
+
+        try {
+          const ok = await AiraAccess.typeText(typeTextVal);
+
+          AiraUI.addMessage(
+            ok ? 'Type: ' + typeTextVal : 'Type nahi hua.',
+            false
+          );
+
+        } catch (e) {
+          AiraUI.addMessage('Type fail.', false);
+        }
+
+        btn.disabled = false;
+        input.focus();
+        return true;
+      }
+    }
+
+    // OPEN APPS
+    if (!(
+      (cmd.includes('search') && (cmd.includes('yt') || cmd.includes('youtube'))) ||
+      (cmd.includes('search') && cmd.includes('google'))
+    )) {
+      const app = this.resolveAppPackage(cmd);
+
+      if (app) {
+        const wantsOpen =
+          cmd.includes('open') ||
+          cmd.includes('kholo') ||
+          cmd.includes('khol') ||
+          cmd === 'yt' ||
+          cmd === 'youtube' ||
+          cmd === 'pw' ||
+          cmd === 'google' ||
+          cmd === app.name.toLowerCase() ||
+          cmd.includes('youtube') ||
+          cmd.includes(app.name.toLowerCase());
+
+        if (wantsOpen) {
+          input.value = '';
+          await this.openAppByName(app, this.wantsLookToo(cmd));
+          return true;
+        }
+      }
+    }
+
+    // OPEN TERMINAL
+    if (
+      cmd === 'open terminal' ||
+      cmd === 'terminal kholo' ||
+      cmd === 'terminal open' ||
+      cmd === 'terminal' ||
+      cmd === 'shell kholo' ||
+      cmd === 'termux kholo'
+    ) {
+      input.value = '';
+      AiraUI.openTerminal();
+      AiraUI.addMessage('Terminal open kar diya.', false);
+      return true;
+    }
+
+    // GO HOME
+    if (cmd === 'go home' || cmd === 'home') {
+      input.value = '';
+      btn.disabled = true;
+
+      try {
+        const ok = await AiraAccess.goHome();
+        AiraUI.addMessage(
+          ok ? 'Home pe le aayi.' : 'Home nahi ja payi.',
+          false
+        );
+      } catch (e) {}
+
+      btn.disabled = false;
+      return true;
+    }
+
+    // GO BACK
+    if (cmd === 'go back' || cmd === 'back') {
+      input.value = '';
+      btn.disabled = true;
+
+      try {
+        const ok = await AiraAccess.goBack();
+        AiraUI.addMessage(
+          ok ? 'Back kar diya.' : 'Back nahi ho paya.',
+          false
+        );
+      } catch (e) {}
+
+      btn.disabled = false;
+      return true;
+    }
+
+    // NOTIFICATIONS
+    if (cmd === 'open notifications' || cmd === 'notifications') {
+      input.value = '';
+      btn.disabled = true;
+
+      try {
+        const ok = await AiraAccess.openNotifications();
+        AiraUI.addMessage(
+          ok ? 'Notifications open.' : 'Notifications nahi khule.',
+          false
+        );
+      } catch (e) {}
+
+      btn.disabled = false;
+      return true;
+    }
+
+    // RECENTS
+    if (cmd === 'open recents' || cmd === 'recents') {
+      input.value = '';
+      btn.disabled = true;
+
+      try {
+        const ok = await AiraAccess.openRecents();
+        AiraUI.addMessage(
+          ok ? 'Recents open.' : 'Recents nahi khule.',
+          false
+        );
+      } catch (e) {}
+
+      btn.disabled = false;
+      return true;
+    }
+
+    return false;
+  },
+
+  async sendMessage() {
+    const input = AiraUI.els.userInput;
+    const btn = AiraUI.els.sendBtn;
+    const text = input.value.trim();
+
+    if (!text) return;
+
+    AiraUI.addMessage(text, true);
+
+    const cmd = text.toLowerCase().trim();
+
+    if (await this.handleFastPath(cmd)) {
+      this.persistChat();
+      return;
+    }
+
+    if (this.isLookAtScreenRequest(text)) {
+      input.value = '';
+      input.style.height = 'auto';
+
+      await this.handleLookAtScreen(text);
+      return;
+    }
+
+    input.value = '';
+    input.style.height = 'auto';
+    btn.disabled = true;
+
+    AiraUI.showTyping();
+
+    this.conversationHistory.push({
+      role: 'user',
+      parts: [{ text: text }]
+    });
+
+    const result = await this.callGemini();
+
+    AiraUI.hideTyping();
+
+    if (result.text) {
+      let reply = result.text;
+
+      const actionMatch = reply.match(/\[\[ACTION:([^\]]+)\]\]/);
+      let action = null;
+
+      if (actionMatch) {
+        action = actionMatch[1].trim();
+        reply = reply.replace(/\[\[ACTION:[^\]]+\]\]/g, '').trim();
+      }
+
+      if (reply) {
+        AiraUI.addMessage(reply, false);
+        this.speak(reply);
+      }
+
+      if (action) {
+        if (action === 'SHOW_SELF') {
+          const photo = this.pickRandomSelfPhoto();
+          if (photo) AiraUI.addImageMessage(photo, null);
+
+        } else if (action === 'OPEN_TERMINAL') {
+          AiraUI.openTerminal();
+
+        } else {
+          await this.runDeviceAction(action);
+        }
+      }
+
+      this.conversationHistory.push({
+        role: 'model',
+        parts: [{ text: result.text }]
+      });
+
+    } else {
+      if (this.isShowYourselfRequest(text)) {
+        const photo = this.pickRandomSelfPhoto();
+
+        if (photo) {
+          const cap = this.pickRandomCaption();
+          AiraUI.addImageMessage(photo, cap);
+          this.speak(cap);
+        } else {
+          AiraUI.addMessage(
+            'Error: ' + (result.error || 'fail'),
+            false
+          );
+        }
+
+      } else {
+        if (
+          this.conversationHistory.length &&
+          this.conversationHistory[this.conversationHistory.length - 1].role === 'user'
+        ) {
+          this.conversationHistory.pop();
+        }
+
+        AiraUI.addMessage(
+          'Error: ' + (result.error || 'fail'),
+          false
+        );
+      }
+    }
+
+    this.persistChat();
+    this.updateEngineState();
+
+    btn.disabled = false;
+    input.focus();
+  },
+
+  bindSend() {
+    AiraUI.els.sendBtn.onclick = () => this.sendMessage();
+
+    AiraUI.els.userInput.onkeydown = (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        this.sendMessage();
+      }
+    };
+  },
+
+  bindClear() {
+    document.getElementById('clearChatBtn').onclick = () => {
+      if (confirm('Clear all messages?')) {
+        AiraUI.clearMessages();
+        this.conversationHistory = [];
+
+        localStorage.removeItem('aira_chat_history');
+
+        AiraUI.addMessage(
+          "Hi, I'm Aira. How can I support you today?",
+          false
+        );
+      }
+    };
+  }
+};
+
+window.AiraChat = AiraChat;
