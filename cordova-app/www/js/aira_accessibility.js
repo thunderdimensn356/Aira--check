@@ -1,6 +1,6 @@
 /**
  * aira_accessibility.js
- * Bridge: Accessibility + screenshot + stay-live + clickAt + hybrid target
+ * Bridge: Accessibility + screenshot + stay-live + clickAt + hybrid target + cursor
  */
 
 const AiraAccess = {
@@ -64,17 +64,10 @@ const AiraAccess = {
     }
   },
 
-  /**
-   * Hybrid click:
-   * 1) memory (label + optional app) → clickAt x,y
-   * 2) clickByText(matchText or label)
-   * 3) findCenterByText → clickAt
-   */
   async clickTarget(label, appPackage) {
     const lab = (label || '').trim();
     if (!lab) return false;
 
-    // 1) trained memory
     if (window.AiraMemory && typeof AiraMemory.find === 'function') {
       const rec = AiraMemory.find(lab, appPackage || null);
       if (rec && typeof rec.x === 'number' && typeof rec.y === 'number') {
@@ -87,10 +80,8 @@ const AiraAccess = {
       }
     }
 
-    // 2) live text / description
     if (await this.clickByText(lab)) return true;
 
-    // 3) bounds center then gesture
     const center = await this.findCenterByText(lab);
     if (center) {
       return await this.clickAt(center.x, center.y);
@@ -217,6 +208,91 @@ const AiraAccess = {
     } catch (e) {
       console.warn(e);
     }
+  },
+
+  // ─── Cursor overlay ─────────────────────────────────────
+
+  showCursor() {
+    if (!window.AiraNative || typeof window.AiraNative.showCursor !== 'function') {
+      return { ok: false, error: 'no-native' };
+    }
+    if (!this.canDrawOverlays()) {
+      this.openOverlaySettings();
+      return { ok: false, error: 'need-overlay-permission' };
+    }
+    try {
+      const ok = !!window.AiraNative.showCursor();
+      return { ok: ok, error: ok ? null : 'show-failed' };
+    } catch (e) {
+      return { ok: false, error: e.message || String(e) };
+    }
+  },
+
+  hideCursor() {
+    try {
+      if (window.AiraNative && typeof window.AiraNative.hideCursor === 'function') {
+        window.AiraNative.hideCursor();
+      }
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: e.message || String(e) };
+    }
+  },
+
+  isCursorVisible() {
+    try {
+      if (window.AiraNative && typeof window.AiraNative.isCursorVisible === 'function') {
+        return !!window.AiraNative.isCursorVisible();
+      }
+    } catch (e) {}
+    return false;
+  },
+
+  moveCursor(dx, dy) {
+    try {
+      if (window.AiraNative && typeof window.AiraNative.moveCursor === 'function') {
+        return !!window.AiraNative.moveCursor(dx | 0, dy | 0);
+      }
+    } catch (e) {}
+    return false;
+  },
+
+  setCursorPosition(x, y) {
+    try {
+      if (window.AiraNative && typeof window.AiraNative.setCursorPosition === 'function') {
+        return !!window.AiraNative.setCursorPosition(x | 0, y | 0);
+      }
+    } catch (e) {}
+    return false;
+  },
+
+  getCursorPosition() {
+    try {
+      if (window.AiraNative && typeof window.AiraNative.getCursorPosition === 'function') {
+        const s = window.AiraNative.getCursorPosition() || '0,0';
+        const p = s.split(',');
+        return { x: parseInt(p[0], 10) || 0, y: parseInt(p[1], 10) || 0 };
+      }
+    } catch (e) {}
+    return { x: 0, y: 0 };
+  },
+
+  cursorClickLeft() {
+    try {
+      if (window.AiraNative && typeof window.AiraNative.cursorClickLeft === 'function') {
+        return !!window.AiraNative.cursorClickLeft();
+      }
+    } catch (e) {}
+    return false;
+  },
+
+  cursorClickRight() {
+    try {
+      if (window.AiraNative && typeof window.AiraNative.cursorClickRight === 'function') {
+        return !!window.AiraNative.cursorClickRight();
+      }
+    } catch (e) {}
+    return false;
   },
 
   startLive() {
