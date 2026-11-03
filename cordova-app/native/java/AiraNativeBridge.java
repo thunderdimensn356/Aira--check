@@ -25,6 +25,8 @@ public class AiraNativeBridge {
         this.appContext = webView.getContext().getApplicationContext();
     }
 
+    // ─── Apps / a11y ───────────────────────────────────────
+
     @JavascriptInterface
     public boolean openApp(String packageName) {
         AiraAccessibilityService service = AiraAccessibilityService.getInstance();
@@ -42,7 +44,6 @@ public class AiraNativeBridge {
         return service.clickByText(text);
     }
 
-    /** Gesture tap at screen pixels (trained targets / magnifying glass). */
     @JavascriptInterface
     public boolean clickAt(int x, int y) {
         AiraAccessibilityService service = AiraAccessibilityService.getInstance();
@@ -50,10 +51,6 @@ public class AiraNativeBridge {
         return service.clickAt(x, y);
     }
 
-    /**
-     * Find center of node matching text/desc.
-     * Returns "x,y" or "" if not found.
-     */
     @JavascriptInterface
     public String findCenterByText(String text) {
         AiraAccessibilityService service = AiraAccessibilityService.getInstance();
@@ -101,6 +98,8 @@ public class AiraNativeBridge {
         return true;
     }
 
+    // ─── Screenshot ────────────────────────────────────────
+
     @JavascriptInterface
     public void captureScreen() {
         screenshotDone = false;
@@ -141,6 +140,8 @@ public class AiraNativeBridge {
         return lastScreenshotError != null ? lastScreenshotError : "";
     }
 
+    // ─── Overlay permission ────────────────────────────────
+
     @JavascriptInterface
     public boolean canDrawOverlays() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -162,6 +163,111 @@ public class AiraNativeBridge {
             Log.e(TAG, "openOverlaySettings", e);
         }
     }
+
+    // ─── Cursor overlay (Phase 1) ───────────────────────────
+
+    /** Show cursor + joystick + L/R. Needs SYSTEM_ALERT_WINDOW. */
+    @JavascriptInterface
+    public boolean showCursor() {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
+                    && !Settings.canDrawOverlays(appContext)) {
+                openOverlaySettings();
+                return false;
+            }
+            AiraCursorOverlay.get(appContext).show();
+            return true;
+        } catch (Exception e) {
+            Log.e(TAG, "showCursor", e);
+            return false;
+        }
+    }
+
+    @JavascriptInterface
+    public boolean hideCursor() {
+        try {
+            AiraCursorOverlay.get(appContext).hide();
+            return true;
+        } catch (Exception e) {
+            Log.e(TAG, "hideCursor", e);
+            return false;
+        }
+    }
+
+    @JavascriptInterface
+    public boolean isCursorVisible() {
+        try {
+            return AiraCursorOverlay.get(appContext).isVisible();
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /** Move cursor by delta pixels (joystick). */
+    @JavascriptInterface
+    public boolean moveCursor(int dx, int dy) {
+        try {
+            AiraCursorOverlay.get(appContext).moveBy(dx, dy);
+            return true;
+        } catch (Exception e) {
+            Log.e(TAG, "moveCursor", e);
+            return false;
+        }
+    }
+
+    /** Absolute position. */
+    @JavascriptInterface
+    public boolean setCursorPosition(int x, int y) {
+        try {
+            AiraCursorOverlay.get(appContext).setPosition(x, y);
+            return true;
+        } catch (Exception e) {
+            Log.e(TAG, "setCursorPosition", e);
+            return false;
+        }
+    }
+
+    /** Returns "x,y" */
+    @JavascriptInterface
+    public String getCursorPosition() {
+        try {
+            return AiraCursorOverlay.get(appContext).getPositionString();
+        } catch (Exception e) {
+            return "0,0";
+        }
+    }
+
+    /** Left click at cursor (a11y tap). */
+    @JavascriptInterface
+    public boolean cursorClickLeft() {
+        try {
+            int[] p = AiraCursorOverlay.get(appContext).getPosition();
+            AiraAccessibilityService service = AiraAccessibilityService.getInstance();
+            if (service == null) return false;
+            return service.clickAt(p[0], p[1]);
+        } catch (Exception e) {
+            Log.e(TAG, "cursorClickLeft", e);
+            return false;
+        }
+    }
+
+    /** Right click ≈ long-press at cursor (if service supports). */
+    @JavascriptInterface
+    public boolean cursorClickRight() {
+        try {
+            int[] p = AiraCursorOverlay.get(appContext).getPosition();
+            AiraAccessibilityService service = AiraAccessibilityService.getInstance();
+            if (service == null) return false;
+            // Prefer longClickAt if you add it later; fallback clickAt
+            if (service.longClickAt(p[0], p[1])) return true;
+            return service.clickAt(p[0], p[1]);
+        } catch (Exception e) {
+            Log.e(TAG, "cursorClickRight", e);
+            return false;
+        }
+    }
+
+    // ─── Live ──────────────────────────────────────────────
 
     @JavascriptInterface
     public boolean startLive() {
