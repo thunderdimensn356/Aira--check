@@ -20,6 +20,7 @@ import android.widget.TextView;
 /**
  * System overlay: cursor + left click buttons + right joystick.
  * Requires SYSTEM_ALERT_WINDOW (Display over other apps).
+ * L/R: hide overlay briefly so a11y gesture hits app underneath.
  */
 public class AiraCursorOverlay {
 
@@ -89,22 +90,27 @@ public class AiraCursorOverlay {
         mainHandler.post(new Runnable() {
             @Override
             public void run() {
-                if (!visible) return;
-                try {
-                    if (cursorView != null) {
-                        try { windowManager.removeView(cursorView); } catch (Exception ignored) {}
-                        cursorView = null;
-                    }
-                    if (root != null) {
-                        try { windowManager.removeView(root); } catch (Exception ignored) {}
-                        root = null;
-                    }
-                } catch (Exception e) {
-                    android.util.Log.e(TAG, "hide", e);
-                }
-                visible = false;
+                removeViewsNow();
             }
         });
+    }
+
+    /** Must run on main thread. */
+    private void removeViewsNow() {
+        if (!visible && root == null && cursorView == null) return;
+        try {
+            if (cursorView != null) {
+                try { windowManager.removeView(cursorView); } catch (Exception ignored) {}
+                cursorView = null;
+            }
+            if (root != null) {
+                try { windowManager.removeView(root); } catch (Exception ignored) {}
+                root = null;
+            }
+        } catch (Exception e) {
+            android.util.Log.e(TAG, "removeViewsNow", e);
+        }
+        visible = false;
     }
 
     public void moveBy(int dx, int dy) {
@@ -137,6 +143,47 @@ public class AiraCursorOverlay {
         return cursorX + "," + cursorY;
     }
 
+    /**
+     * Hide overlay → a11y click/longClick → show again.
+     */
+    private void clickThrough(final boolean leftClick) {
+        final AiraAccessibilityService service = AiraAccessibilityService.getInstance();
+        if (service == null) {
+            android.util.Log.e(TAG, "clickThrough: accessibility service null");
+            return;
+        }
+        final int x = cursorX;
+        final int y = cursorY;
+
+        mainHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                removeViewsNow();
+                mainHandler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            if (leftClick) {
+                                service.clickAt(x, y);
+                            } else {
+                                service.longClickAt(x, y);
+                            }
+                            android.util.Log.d(TAG, "clickThrough left=" + leftClick + " @ " + x + "," + y);
+                        } catch (Throwable t) {
+                            android.util.Log.e(TAG, "clickThrough failed", t);
+                        }
+                        mainHandler.postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                show();
+                            }
+                        }, 280);
+                    }
+                }, 150);
+            }
+        });
+    }
+
     private void buildAndAdd() {
         DisplayMetrics dm = appContext.getResources().getDisplayMetrics();
         screenW = dm.widthPixels;
@@ -146,11 +193,8 @@ public class AiraCursorOverlay {
                 ? WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
                 : WindowManager.LayoutParams.TYPE_PHONE;
 
-        // Full-screen touch layer for controls (not blocking whole screen forever —
-        // we use WRAP panels at edges)
         root = new FrameLayout(appContext);
 
-        // Left: L / R buttons
         LinearLayout leftPanel = buildClickPanel();
         FrameLayout.LayoutParams leftLp = new FrameLayout.LayoutParams(
                 dp(64),
@@ -160,7 +204,6 @@ public class AiraCursorOverlay {
         leftLp.leftMargin = dp(12);
         root.addView(leftPanel, leftLp);
 
-        // Right: joystick
         View joystick = buildJoystick();
         FrameLayout.LayoutParams joyLp = new FrameLayout.LayoutParams(
                 dp(140),
@@ -181,14 +224,11 @@ public class AiraCursorOverlay {
         );
         rootParams.gravity = Gravity.TOP | Gravity.START;
 
-        // Root only receives touches on children; empty area passes through on many devices
-        // if we don't consume — set root clickable false
         root.setClickable(false);
         root.setFocusable(false);
 
         windowManager.addView(root, rootParams);
 
-        // Cursor (separate small window so it stays on top)
         cursorView = buildCursorDot();
         cursorParams = new WindowManager.LayoutParams(
                 cursorSizePx,
@@ -247,18 +287,7 @@ public class AiraCursorOverlay {
         tv.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                AiraAccessibilityService service = AiraAccessibilityService.getInstance();
-                if (service == null) return;
-                if (left) {
-                    service.clickAt(cursorX, cursorY);
-                } else {
-                    // long-press if available
-                    try {
-                        service.longClickAt(cursorX, cursorY);
-                    } catch (Throwable t) {
-                        service.clickAt(cursorX, cursorY);
-                    }
-                }
+                clickThrough(left);
             }
         });
         return tv;
@@ -284,7 +313,6 @@ public class AiraCursorOverlay {
         final int[] boxSize = new int[]{dp(140)};
 
         box.setOnTouchListener(new View.OnTouchListener() {
-            float lastX, lastY;
             boolean dragging;
 
             @Override
@@ -294,8 +322,6 @@ public class AiraCursorOverlay {
                 switch (e.getActionMasked()) {
                     case MotionEvent.ACTION_DOWN:
                         dragging = true;
-                        lastX = e.getX();
-                        lastY = e.getY();
                         updateKnob(knob, e.getX(), e.getY(), cx, cy, knobSize);
                         return true;
                     case MotionEvent.ACTION_MOVE:
@@ -304,15 +330,13 @@ public class AiraCursorOverlay {
                         float y = e.getY();
                         float dx = x - cx;
                         float dy = y - cy;
-                        // sensitivity
-                        int moveX = Math.round(dx / 8f);
-                        int moveY = Math.round(dy / 8f);
+                        // higher sensitivity
+                        int moveX = Math.round(dx / 5f);
+                        int moveY = Math.round(dy / 5f);
                         if (moveX != 0 || moveY != 0) {
                             setPosition(cursorX + moveX, cursorY + moveY);
                         }
                         updateKnob(knob, x, y, cx, cy, knobSize);
-                        lastX = x;
-                        lastY = y;
                         return true;
                     case MotionEvent.ACTION_UP:
                     case MotionEvent.ACTION_CANCEL:
