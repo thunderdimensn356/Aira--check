@@ -168,6 +168,31 @@ public class AiraAccessibilityService extends AccessibilityService {
     }
 
     /**
+     * Long-press at screen coordinates (cursor right-click).
+     * Duration \~600ms so system treats it as long press.
+     */
+    public boolean longClickAt(int x, int y) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+            Log.e(TAG, "longClickAt requires API 24+");
+            return clickAt(x, y);
+        }
+        try {
+            Path path = new Path();
+            path.moveTo((float) x, (float) y);
+            GestureDescription.StrokeDescription stroke =
+                new GestureDescription.StrokeDescription(path, 0, 600);
+            GestureDescription gesture =
+                new GestureDescription.Builder().addStroke(stroke).build();
+            boolean ok = dispatchGesture(gesture, null, null);
+            Log.d(TAG, "longClickAt(" + x + "," + y + ") -> " + ok);
+            return ok;
+        } catch (Exception e) {
+            Log.e(TAG, "longClickAt failed", e);
+            return clickAt(x, y);
+        }
+    }
+
+    /**
      * Find first node matching text/desc; return center as "x,y" or empty.
      */
     public String findCenterByText(String query) {
