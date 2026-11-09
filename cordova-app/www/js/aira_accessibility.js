@@ -1,6 +1,6 @@
 /**
  * aira_accessibility.js
- * Bridge: Accessibility + screenshot + stay-live + clickAt + hybrid target + cursor
+ * Bridge: a11y + screenshot + live + cursor + vision coord helpers
  */
 
 const AiraAccess = {
@@ -210,7 +210,7 @@ const AiraAccess = {
     }
   },
 
-  // ─── Cursor overlay ─────────────────────────────────────
+  // ─── Cursor ─────────────────────────────────────────────
 
   showCursor() {
     if (!window.AiraNative || typeof window.AiraNative.showCursor !== 'function') {
@@ -295,6 +295,93 @@ const AiraAccess = {
     return false;
   },
 
+  // ─── Vision / screen helpers ────────────────────────────
+
+  /** CSS pixel screen size (approx physical for WebView). */
+  getScreenSize() {
+    const w = Math.max(
+      window.screen && window.screen.width ? window.screen.width : 0,
+      window.innerWidth || 0,
+      1080
+    );
+    const h = Math.max(
+      window.screen && window.screen.height ? window.screen.height : 0,
+      window.innerHeight || 0,
+      1920
+    );
+    return { w: w, h: h };
+  },
+
+  /**
+   * Gemini often returns normalized 0–1000 coords.
+   * Also accepts absolute pixels if values look like pixels.
+   */
+  visionToScreen(nx, ny) {
+    const size = this.getScreenSize();
+    let x = Number(nx);
+    let y = Number(ny);
+    if (isNaN(x) || isNaN(y)) return null;
+
+    // Normalized grid 0–1000
+    if (x >= 0 && x <= 1000 && y >= 0 && y <= 1000) {
+      x = Math.round((x / 1000) * size.w);
+      y = Math.round((y / 1000) * size.h);
+    } else {
+      x = Math.round(x);
+      y = Math.round(y);
+    }
+    x = Math.max(0, Math.min(size.w - 1, x));
+    y = Math.max(0, Math.min(size.h - 1, y));
+    return { x: x, y: y };
+  },
+
+  /**
+   * Parse JSON from vision reply.
+   * Accepts: {"x":..,"y":..} or {"nx":..,"ny":..} or embedded in text.
+   */
+  parseVisionCoords(text) {
+    if (!text) return null;
+    const raw = String(text);
+
+    // Fenced or plain JSON object
+    let m = raw.match(/\{[\s\S]*?\}/);
+    if (m) {
+      try {
+        const obj = JSON.parse(m[0]);
+        const x = obj.x != null ? obj.x : obj.nx;
+        const y = obj.y != null ? obj.y : obj.ny;
+        if (x != null && y != null) {
+          return this.visionToScreen(x, y);
+        }
+      } catch (e) {}
+    }
+
+    // x:123 y:456
+    m = raw.match(/x\s*[:=]\s*(\d+)\s*[,;\s]+y\s*[:=]\s*(\d+)/i);
+    if (m) {
+      return this.visionToScreen(parseInt(m[1], 10), parseInt(m[2], 10));
+    }
+    return null;
+  },
+
+  async moveCursorTo(x, y) {
+    return this.setCursorPosition(x, y);
+  },
+
+  async clickScreen(x, y) {
+    // Prefer native cursor left-click path if visible (hides overlay in Java)
+    if (this.isCursorVisible()) {
+      this.setCursorPosition(x, y);
+      await new Promise(function (r) { setTimeout(r, 80); });
+      if (typeof window.AiraNative.cursorClickLeft === 'function') {
+        try {
+          return !!window.AiraNative.cursorClickLeft();
+        } catch (e) {}
+      }
+    }
+    return await this.clickAt(x, y);
+  },
+
   startLive() {
     if (!window.AiraNative || typeof window.AiraNative.startLive !== 'function') {
       return { ok: false, error: 'no-native' };
@@ -340,9 +427,9 @@ const AiraAccess = {
   async searchInChrome(query) {
     const opened = await this.openApp('com.android.chrome');
     if (!opened) return false;
-    await new Promise((r) => setTimeout(r, 1500));
+    await new Promise(function (r) { setTimeout(r, 1500); });
     await this.clickByText('Search');
-    await new Promise((r) => setTimeout(r, 500));
+    await new Promise(function (r) { setTimeout(r, 500); });
     return await this.typeText(query);
   }
 };
