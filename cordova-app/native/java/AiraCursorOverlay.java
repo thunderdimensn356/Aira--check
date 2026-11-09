@@ -18,9 +18,8 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 /**
- * System overlay: cursor + left click buttons + right joystick.
- * Requires SYSTEM_ALERT_WINDOW (Display over other apps).
- * L/R: hide overlay briefly so a11y gesture hits app underneath.
+ * Cursor overlay — small windows only (screen stays free).
+ * hide() always removes L/R + joystick + cursor dot.
  */
 public class AiraCursorOverlay {
 
@@ -35,7 +34,8 @@ public class AiraCursorOverlay {
     private final WindowManager windowManager;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
-    private FrameLayout root;
+    private View leftPanel;
+    private View joystick;
     private View cursorView;
     private boolean visible = false;
 
@@ -45,7 +45,6 @@ public class AiraCursorOverlay {
     private int cursorY;
     private int cursorSizePx;
 
-    private WindowManager.LayoutParams rootParams;
     private WindowManager.LayoutParams cursorParams;
 
     public static synchronized AiraCursorOverlay get(Context context) {
@@ -76,8 +75,11 @@ public class AiraCursorOverlay {
             public void run() {
                 if (visible) return;
                 try {
+                    // clean any leftover views first
+                    removeViewsNow();
                     buildAndAdd();
                     visible = true;
+                    android.util.Log.d(TAG, "show ok");
                 } catch (Exception e) {
                     android.util.Log.e(TAG, "show", e);
                     visible = false;
@@ -87,30 +89,34 @@ public class AiraCursorOverlay {
     }
 
     public void hide() {
-        mainHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                removeViewsNow();
-            }
-        });
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            removeViewsNow();
+        } else {
+            mainHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    removeViewsNow();
+                }
+            });
+        }
     }
 
-    /** Must run on main thread. */
+    /** Always try to remove every overlay view. Main thread only. */
     private void removeViewsNow() {
-        if (!visible && root == null && cursorView == null) return;
-        try {
-            if (cursorView != null) {
-                try { windowManager.removeView(cursorView); } catch (Exception ignored) {}
-                cursorView = null;
-            }
-            if (root != null) {
-                try { windowManager.removeView(root); } catch (Exception ignored) {}
-                root = null;
-            }
-        } catch (Exception e) {
-            android.util.Log.e(TAG, "removeViewsNow", e);
+        if (cursorView != null) {
+            try { windowManager.removeView(cursorView); } catch (Exception ignored) {}
+            cursorView = null;
+        }
+        if (leftPanel != null) {
+            try { windowManager.removeView(leftPanel); } catch (Exception ignored) {}
+            leftPanel = null;
+        }
+        if (joystick != null) {
+            try { windowManager.removeView(joystick); } catch (Exception ignored) {}
+            joystick = null;
         }
         visible = false;
+        android.util.Log.d(TAG, "removeViewsNow done");
     }
 
     public void moveBy(int dx, int dy) {
@@ -143,13 +149,10 @@ public class AiraCursorOverlay {
         return cursorX + "," + cursorY;
     }
 
-    /**
-     * Hide overlay → a11y click/longClick → show again.
-     */
     private void clickThrough(final boolean leftClick) {
         final AiraAccessibilityService service = AiraAccessibilityService.getInstance();
         if (service == null) {
-            android.util.Log.e(TAG, "clickThrough: accessibility service null");
+            android.util.Log.e(TAG, "clickThrough: service null");
             return;
         }
         final int x = cursorX;
@@ -168,9 +171,8 @@ public class AiraCursorOverlay {
                             } else {
                                 service.longClickAt(x, y);
                             }
-                            android.util.Log.d(TAG, "clickThrough left=" + leftClick + " @ " + x + "," + y);
                         } catch (Throwable t) {
-                            android.util.Log.e(TAG, "clickThrough failed", t);
+                            android.util.Log.e(TAG, "clickThrough", t);
                         }
                         mainHandler.postDelayed(new Runnable() {
                             @Override
@@ -184,56 +186,54 @@ public class AiraCursorOverlay {
         });
     }
 
-    private void buildAndAdd() {
-        DisplayMetrics dm = appContext.getResources().getDisplayMetrics();
-        screenW = dm.widthPixels;
-        screenH = dm.heightPixels;
-
-        int type = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+    private int overlayType() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
                 ? WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
                 : WindowManager.LayoutParams.TYPE_PHONE;
+    }
 
-        root = new FrameLayout(appContext);
-
-        LinearLayout leftPanel = buildClickPanel();
-        FrameLayout.LayoutParams leftLp = new FrameLayout.LayoutParams(
-                dp(64),
-                FrameLayout.LayoutParams.WRAP_CONTENT,
-                Gravity.CENTER_VERTICAL | Gravity.START
-        );
-        leftLp.leftMargin = dp(12);
-        root.addView(leftPanel, leftLp);
-
-        View joystick = buildJoystick();
-        FrameLayout.LayoutParams joyLp = new FrameLayout.LayoutParams(
-                dp(140),
-                dp(140),
-                Gravity.CENTER_VERTICAL | Gravity.END
-        );
-        joyLp.rightMargin = dp(12);
-        root.addView(joystick, joyLp);
-
-        rootParams = new WindowManager.LayoutParams(
-                WindowManager.LayoutParams.MATCH_PARENT,
-                WindowManager.LayoutParams.MATCH_PARENT,
-                type,
+    private WindowManager.LayoutParams baseParams(int w, int h, int gravity) {
+        WindowManager.LayoutParams lp = new WindowManager.LayoutParams(
+                w,
+                h,
+                overlayType(),
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
                         | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
                         | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
                 PixelFormat.TRANSLUCENT
         );
-        rootParams.gravity = Gravity.TOP | Gravity.START;
+        lp.gravity = gravity;
+        return lp;
+    }
 
-        root.setClickable(false);
-        root.setFocusable(false);
+    private void buildAndAdd() {
+        DisplayMetrics dm = appContext.getResources().getDisplayMetrics();
+        screenW = dm.widthPixels;
+        screenH = dm.heightPixels;
 
-        windowManager.addView(root, rootParams);
+        leftPanel = buildClickPanel();
+        WindowManager.LayoutParams leftLp = baseParams(
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                Gravity.CENTER_VERTICAL | Gravity.START
+        );
+        leftLp.x = dp(12);
+        windowManager.addView(leftPanel, leftLp);
+
+        joystick = buildJoystick();
+        WindowManager.LayoutParams joyLp = baseParams(
+                dp(140),
+                dp(140),
+                Gravity.CENTER_VERTICAL | Gravity.END
+        );
+        joyLp.x = dp(12);
+        windowManager.addView(joystick, joyLp);
 
         cursorView = buildCursorDot();
         cursorParams = new WindowManager.LayoutParams(
                 cursorSizePx,
                 cursorSizePx,
-                type,
+                overlayType(),
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
                         | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
                         | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
@@ -310,15 +310,15 @@ public class AiraCursorOverlay {
         FrameLayout.LayoutParams kLp = new FrameLayout.LayoutParams(knobSize, knobSize, Gravity.CENTER);
         box.addView(knob, kLp);
 
-        final int[] boxSize = new int[]{dp(140)};
+        final int joySize = dp(140);
 
         box.setOnTouchListener(new View.OnTouchListener() {
             boolean dragging;
 
             @Override
             public boolean onTouch(View v, MotionEvent e) {
-                float cx = boxSize[0] / 2f;
-                float cy = boxSize[0] / 2f;
+                float cx = joySize / 2f;
+                float cy = joySize / 2f;
                 switch (e.getActionMasked()) {
                     case MotionEvent.ACTION_DOWN:
                         dragging = true;
@@ -328,11 +328,8 @@ public class AiraCursorOverlay {
                         if (!dragging) return true;
                         float x = e.getX();
                         float y = e.getY();
-                        float dx = x - cx;
-                        float dy = y - cy;
-                        // higher sensitivity
-                        int moveX = Math.round(dx / 5f);
-                        int moveY = Math.round(dy / 5f);
+                        int moveX = Math.round((x - cx) / 5f);
+                        int moveY = Math.round((y - cy) / 5f);
                         if (moveX != 0 || moveY != 0) {
                             setPosition(cursorX + moveX, cursorY + moveY);
                         }
