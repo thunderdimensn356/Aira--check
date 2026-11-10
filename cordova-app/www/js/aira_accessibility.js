@@ -1,6 +1,6 @@
 /**
  * aira_accessibility.js
- * Bridge: a11y + screenshot + live + cursor + vision coord helpers
+ * Bridge: a11y + screenshot + live + cursor + vision + snap next tappable
  */
 
 const AiraAccess = {
@@ -62,6 +62,46 @@ const AiraAccess = {
     } catch (e) {
       return Promise.resolve(null);
     }
+  },
+
+  /**
+   * Next tappable/editable in direction from (fromX, fromY).
+   * dir: up|down|left|right|upar|niche|baye|daye
+   */
+  findNextClickable(dir, fromX, fromY) {
+    if (!this.isAvailable()) return Promise.resolve(null);
+    try {
+      if (typeof window.AiraNative.findNextClickable !== 'function') {
+        return Promise.resolve(null);
+      }
+      const s = window.AiraNative.findNextClickable(
+        dir || '',
+        fromX | 0,
+        fromY | 0
+      );
+      if (!s || s.indexOf(',') < 0) return Promise.resolve(null);
+      const parts = s.split(',');
+      const x = parseInt(parts[0], 10);
+      const y = parseInt(parts[1], 10);
+      if (isNaN(x) || isNaN(y)) return Promise.resolve(null);
+      return Promise.resolve({ x: x, y: y });
+    } catch (e) {
+      return Promise.resolve(null);
+    }
+  },
+
+  /**
+   * Move cursor to next tappable in direction (from current cursor pos).
+   * Returns { ok, x, y } or { ok:false }.
+   */
+  async snapCursor(dir) {
+    const p = this.getCursorPosition();
+    const next = await this.findNextClickable(dir, p.x, p.y);
+    if (!next) {
+      return { ok: false, error: 'none' };
+    }
+    this.setCursorPosition(next.x, next.y);
+    return { ok: true, x: next.x, y: next.y };
   },
 
   async clickTarget(label, appPackage) {
@@ -297,7 +337,6 @@ const AiraAccess = {
 
   // ─── Vision / screen helpers ────────────────────────────
 
-  /** CSS pixel screen size (approx physical for WebView). */
   getScreenSize() {
     const w = Math.max(
       window.screen && window.screen.width ? window.screen.width : 0,
@@ -312,17 +351,12 @@ const AiraAccess = {
     return { w: w, h: h };
   },
 
-  /**
-   * Gemini often returns normalized 0–1000 coords.
-   * Also accepts absolute pixels if values look like pixels.
-   */
   visionToScreen(nx, ny) {
     const size = this.getScreenSize();
     let x = Number(nx);
     let y = Number(ny);
     if (isNaN(x) || isNaN(y)) return null;
 
-    // Normalized grid 0–1000
     if (x >= 0 && x <= 1000 && y >= 0 && y <= 1000) {
       x = Math.round((x / 1000) * size.w);
       y = Math.round((y / 1000) * size.h);
@@ -335,15 +369,10 @@ const AiraAccess = {
     return { x: x, y: y };
   },
 
-  /**
-   * Parse JSON from vision reply.
-   * Accepts: {"x":..,"y":..} or {"nx":..,"ny":..} or embedded in text.
-   */
   parseVisionCoords(text) {
     if (!text) return null;
     const raw = String(text);
 
-    // Fenced or plain JSON object
     let m = raw.match(/\{[\s\S]*?\}/);
     if (m) {
       try {
@@ -356,7 +385,6 @@ const AiraAccess = {
       } catch (e) {}
     }
 
-    // x:123 y:456
     m = raw.match(/x\s*[:=]\s*(\d+)\s*[,;\s]+y\s*[:=]\s*(\d+)/i);
     if (m) {
       return this.visionToScreen(parseInt(m[1], 10), parseInt(m[2], 10));
@@ -369,7 +397,6 @@ const AiraAccess = {
   },
 
   async clickScreen(x, y) {
-    // Prefer native cursor left-click path if visible (hides overlay in Java)
     if (this.isCursorVisible()) {
       this.setCursorPosition(x, y);
       await new Promise(function (r) { setTimeout(r, 80); });
