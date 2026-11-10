@@ -19,6 +19,8 @@ import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 
 import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 public class AiraAccessibilityService extends AccessibilityService {
 
@@ -81,10 +83,6 @@ public class AiraAccessibilityService extends AccessibilityService {
         }
     }
 
-    /**
-     * Click by visible text OR icon contentDescription.
-     * Strict first, then fuzzy.
-     */
     public boolean clickByText(String text) {
         if (text == null) return false;
         text = text.trim();
@@ -142,10 +140,6 @@ public class AiraAccessibilityService extends AccessibilityService {
         return false;
     }
 
-    /**
-     * Gesture tap at screen coordinates (API 24+).
-     * Used for trained memory targets (e.g. YT magnifying glass).
-     */
     public boolean clickAt(int x, int y) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
             Log.e(TAG, "clickAt requires API 24+");
@@ -167,10 +161,6 @@ public class AiraAccessibilityService extends AccessibilityService {
         }
     }
 
-    /**
-     * Long-press at screen coordinates (cursor right-click).
-     * Duration \~600ms so system treats it as long press.
-     */
     public boolean longClickAt(int x, int y) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
             Log.e(TAG, "longClickAt requires API 24+");
@@ -192,9 +182,6 @@ public class AiraAccessibilityService extends AccessibilityService {
         }
     }
 
-    /**
-     * Find first node matching text/desc; return center as "x,y" or empty.
-     */
     public String findCenterByText(String query) {
         if (query == null || query.trim().isEmpty()) return "";
         AccessibilityNodeInfo root = getRootInActiveWindow();
@@ -238,6 +225,121 @@ public class AiraAccessibilityService extends AccessibilityService {
             if (found != null) return found;
         }
         return null;
+    }
+
+    /**
+     * Next tappable/editable center in a direction from (fromX, fromY).
+     * direction: up | down | left | right
+     * Returns "x,y" or "" if none.
+     */
+    public String findNextClickable(String direction, int fromX, int fromY) {
+        if (direction == null) return "";
+        String dir = direction.trim().toLowerCase();
+        AccessibilityNodeInfo root = getRootInActiveWindow();
+        if (root == null) return "";
+
+        List<int[]> targets = new ArrayList<>();
+        collectTargets(root, targets);
+
+        int bestX = -1;
+        int bestY = -1;
+        double bestScore = Double.MAX_VALUE;
+
+        for (int i = 0; i < targets.size(); i++) {
+            int cx = targets.get(i)[0];
+            int cy = targets.get(i)[1];
+            int dx = cx - fromX;
+            int dy = cy - fromY;
+
+            // skip almost same point
+            if (Math.abs(dx) < 24 && Math.abs(dy) < 24) continue;
+
+            boolean ok = false;
+            double primary;
+            double lateral;
+
+            if ("up".equals(dir) || "upar".equals(dir)) {
+                if (dy < -20) {
+                    ok = true;
+                    primary = -dy;
+                    lateral = Math.abs(dx);
+                } else {
+                    continue;
+                }
+            } else if ("down".equals(dir) || "niche".equals(dir)) {
+                if (dy > 20) {
+                    ok = true;
+                    primary = dy;
+                    lateral = Math.abs(dx);
+                } else {
+                    continue;
+                }
+            } else if ("left".equals(dir) || "baye".equals(dir)) {
+                if (dx < -20) {
+                    ok = true;
+                    primary = -dx;
+                    lateral = Math.abs(dy);
+                } else {
+                    continue;
+                }
+            } else if ("right".equals(dir) || "daye".equals(dir)) {
+                if (dx > 20) {
+                    ok = true;
+                    primary = dx;
+                    lateral = Math.abs(dy);
+                } else {
+                    continue;
+                }
+            } else {
+                return "";
+            }
+
+            if (!ok) continue;
+
+            // prefer closer along direction, small lateral drift
+            double score = primary + lateral * 0.35;
+            if (score < bestScore) {
+                bestScore = score;
+                bestX = cx;
+                bestY = cy;
+            }
+        }
+
+        if (bestX < 0) return "";
+        Log.d(TAG, "findNextClickable " + dir + " from " + fromX + "," + fromY +
+                " -> " + bestX + "," + bestY);
+        return bestX + "," + bestY;
+    }
+
+    private void collectTargets(AccessibilityNodeInfo node, List<int[]> out) {
+        if (node == null) return;
+
+        boolean useful =
+            node.isClickable() ||
+            node.isEditable() ||
+            node.isCheckable() ||
+            (Build.VERSION.SDK_INT >= 21 && node.isLongClickable());
+
+        if (useful) {
+            Rect r = new Rect();
+            node.getBoundsInScreen(r);
+            if (r.width() >= 24 && r.height() >= 24) {
+                out.add(new int[]{ r.centerX(), r.centerY() });
+            }
+        }
+
+        // Also editable even if not marked clickable
+        if (node.isEditable()) {
+            Rect r = new Rect();
+            node.getBoundsInScreen(r);
+            if (r.width() >= 24 && r.height() >= 24) {
+                out.add(new int[]{ r.centerX(), r.centerY() });
+            }
+        }
+
+        for (int i = 0; i < node.getChildCount(); i++) {
+            collectTargets(node.getChild(i), out);
+        }
     }
 
     public boolean typeText(String text) {
