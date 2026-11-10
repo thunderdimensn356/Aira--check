@@ -59,6 +59,24 @@ public class AiraNativeBridge {
         return s != null ? s : "";
     }
 
+    /**
+     * Next tappable in direction from (fromX, fromY).
+     * direction: up|down|left|right (or upar|niche|baye|daye)
+     * Returns "x,y" or "".
+     */
+    @JavascriptInterface
+    public String findNextClickable(String direction, int fromX, int fromY) {
+        AiraAccessibilityService service = AiraAccessibilityService.getInstance();
+        if (service == null) return "";
+        try {
+            String s = service.findNextClickable(direction, fromX, fromY);
+            return s != null ? s : "";
+        } catch (Exception e) {
+            Log.e(TAG, "findNextClickable", e);
+            return "";
+        }
+    }
+
     @JavascriptInterface
     public boolean typeText(String text) {
         AiraAccessibilityService service = AiraAccessibilityService.getInstance();
@@ -164,9 +182,8 @@ public class AiraNativeBridge {
         }
     }
 
-    // ─── Cursor overlay (Phase 1) ───────────────────────────
+    // ─── Cursor overlay ────────────────────────────────────
 
-    /** Show cursor + joystick + L/R. Needs SYSTEM_ALERT_WINDOW. */
     @JavascriptInterface
     public boolean showCursor() {
         try {
@@ -203,7 +220,6 @@ public class AiraNativeBridge {
         }
     }
 
-    /** Move cursor by delta pixels (joystick). */
     @JavascriptInterface
     public boolean moveCursor(int dx, int dy) {
         try {
@@ -215,7 +231,6 @@ public class AiraNativeBridge {
         }
     }
 
-    /** Absolute position. */
     @JavascriptInterface
     public boolean setCursorPosition(int x, int y) {
         try {
@@ -227,7 +242,6 @@ public class AiraNativeBridge {
         }
     }
 
-    /** Returns "x,y" */
     @JavascriptInterface
     public String getCursorPosition() {
         try {
@@ -237,7 +251,6 @@ public class AiraNativeBridge {
         }
     }
 
-    /** Left click at cursor (a11y tap). */
     @JavascriptInterface
     public boolean cursorClickLeft() {
         try {
@@ -251,14 +264,12 @@ public class AiraNativeBridge {
         }
     }
 
-    /** Right click ≈ long-press at cursor (if service supports). */
     @JavascriptInterface
     public boolean cursorClickRight() {
         try {
             int[] p = AiraCursorOverlay.get(appContext).getPosition();
             AiraAccessibilityService service = AiraAccessibilityService.getInstance();
             if (service == null) return false;
-            // Prefer longClickAt if you add it later; fallback clickAt
             if (service.longClickAt(p[0], p[1])) return true;
             return service.clickAt(p[0], p[1]);
         } catch (Exception e) {
