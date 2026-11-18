@@ -1,12 +1,17 @@
 /**
  * aira_accessibility.js
- * Bridge: a11y + screenshot + live + cursor + vision + snap next tappable
+ * Bridge: a11y + screenshot + live + cursor + vision grid + snap
  */
 
 const AiraAccess = {
   _screenshotWaiter: null,
+  _screenshotTimeout: null,
   _live: false,
   onLiveText: null,
+
+  /** Last gridded / raw shot pixel size (for 0–1000 → screen). */
+  _lastShotW: 0,
+  _lastShotH: 0,
 
   isAvailable() {
     return !!(window.AiraNative && typeof window.AiraNative.openApp === 'function');
@@ -64,10 +69,6 @@ const AiraAccess = {
     }
   },
 
-  /**
-   * Next tappable/editable in direction from (fromX, fromY).
-   * dir: up|down|left|right|upar|niche|baye|daye
-   */
   findNextClickable(dir, fromX, fromY) {
     if (!this.isAvailable()) return Promise.resolve(null);
     try {
@@ -90,10 +91,6 @@ const AiraAccess = {
     }
   },
 
-  /**
-   * Move cursor to next tappable in direction (from current cursor pos).
-   * Returns { ok, x, y } or { ok:false }.
-   */
   async snapCursor(dir) {
     const p = this.getCursorPosition();
     const next = await this.findNextClickable(dir, p.x, p.y);
@@ -231,6 +228,118 @@ const AiraAccess = {
     }
   },
 
+  /**
+   * Capture screen then draw 0–1000 coordinate grid for Gemini Vision.
+   * Returns { ok, base64, width, height, error }.
+   */
+  async captureScreenWithGrid() {
+    const shot = await this.captureScreen();
+    if (!shot.ok || !shot.base64) {
+      return { ok: false, base64: null, width: 0, height: 0, error: shot.error || 'capture-fail' };
+    }
+    try {
+      const gridded = await this.addCoordinateGrid(shot.base64);
+      return gridded;
+    } catch (e) {
+      console.error('grid', e);
+      // fallback: raw shot
+      return { ok: true, base64: shot.base64, width: this._lastShotW, height: this._lastShotH, error: null, gridded: false };
+    }
+  },
+
+  /**
+   * Draw axis + 0–1000 grid on JPEG base64. Stores shot size for visionToScreen.
+   */
+  addCoordinateGrid(base64Jpeg) {
+    const self = this;
+    return new Promise(function (resolve, reject) {
+      const img = new Image();
+      img.onload = function () {
+        try {
+          const w = img.naturalWidth || img.width;
+          const h = img.naturalHeight || img.height;
+          self._lastShotW = w;
+          self._lastShotH = h;
+
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+
+          // semi-transparent grid every 100 units (0–1000 space)
+          ctx.save();
+          ctx.strokeStyle = 'rgba(167, 139, 250, 0.45)';
+          ctx.fillStyle = 'rgba(167, 139, 250, 0.9)';
+          ctx.lineWidth = Math.max(1, Math.round(Math.min(w, h) / 400));
+          const fontPx = Math.max(12, Math.round(Math.min(w, h) / 45));
+          ctx.font = 'bold ' + fontPx + 'px monospace';
+          ctx.textBaseline = 'top';
+
+          for (let g = 0; g <= 1000; g += 100) {
+            const px = (g / 1000) * w;
+            const py = (g / 1000) * h;
+
+            // vertical
+            ctx.beginPath();
+            ctx.moveTo(px, 0);
+            ctx.lineTo(px, h);
+            ctx.stroke();
+
+            // horizontal
+            ctx.beginPath();
+            ctx.moveTo(0, py);
+            ctx.lineTo(w, py);
+            ctx.stroke();
+
+            // labels
+            const label = String(g);
+            ctx.fillText(label, Math.min(px + 3, w - fontPx * 3), 4);
+            if (g > 0) {
+              ctx.fillText(label, 4, Math.min(py + 3, h - fontPx - 4));
+            }
+          }
+
+          // origin + axes emphasis
+          ctx.strokeStyle = 'rgba(255, 80, 80, 0.85)';
+          ctx.lineWidth = ctx.lineWidth + 1;
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.lineTo(w, 0);
+          ctx.lineTo(w, h);
+          ctx.lineTo(0, h);
+          ctx.closePath();
+          ctx.stroke();
+
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+          ctx.fillText('0,0', 6, 6);
+          ctx.fillText('1000,0', w - fontPx * 5, 6);
+          ctx.fillText('0,1000', 6, h - fontPx - 6);
+          ctx.fillText('1000,1000', w - fontPx * 7, h - fontPx - 6);
+          ctx.restore();
+
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+          const b64 = dataUrl.replace(/^data:image\/jpeg;base64,/, '');
+          resolve({
+            ok: true,
+            base64: b64,
+            width: w,
+            height: h,
+            error: null,
+            gridded: true
+          });
+        } catch (err) {
+          reject(err);
+        }
+      };
+      img.onerror = function () {
+        reject(new Error('image-load-failed'));
+      };
+      // native returns raw base64 without prefix
+      img.src = 'data:image/jpeg;base64,' + base64Jpeg;
+    });
+  },
+
   canDrawOverlays() {
     try {
       if (window.AiraNative && typeof window.AiraNative.canDrawOverlays === 'function') {
@@ -338,6 +447,10 @@ const AiraAccess = {
   // ─── Vision / screen helpers ────────────────────────────
 
   getScreenSize() {
+    // Prefer last screenshot pixel size (matches vision image)
+    if (this._lastShotW > 0 && this._lastShotH > 0) {
+      return { w: this._lastShotW, h: this._lastShotH };
+    }
     const w = Math.max(
       window.screen && window.screen.width ? window.screen.width : 0,
       window.innerWidth || 0,
@@ -351,6 +464,10 @@ const AiraAccess = {
     return { w: w, h: h };
   },
 
+  /**
+   * 0–1000 grid → device / shot pixels.
+   * Prefer _lastShotW/H so click matches screenshot scale.
+   */
   visionToScreen(nx, ny) {
     const size = this.getScreenSize();
     let x = Number(nx);
@@ -400,7 +517,7 @@ const AiraAccess = {
     if (this.isCursorVisible()) {
       this.setCursorPosition(x, y);
       await new Promise(function (r) { setTimeout(r, 80); });
-      if (typeof window.AiraNative.cursorClickLeft === 'function') {
+      if (window.AiraNative && typeof window.AiraNative.cursorClickLeft === 'function') {
         try {
           return !!window.AiraNative.cursorClickLeft();
         } catch (e) {}
