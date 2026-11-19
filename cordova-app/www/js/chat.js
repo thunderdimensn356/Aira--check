@@ -1,6 +1,6 @@
 /**
  * chat.js
- * persist | YT/Google | click/type/live | cursor | vision click
+ * persist | YT/Google | click/type/live | cursor | gridded vision click
  */
 
 const AiraChat = {
@@ -576,7 +576,8 @@ const AiraChat = {
                 parts: [{
                   text:
                     this.getSystemPromptWithTime() +
-                    '\n\nYou can see a screenshot. Be accurate. For coordinates use normalized 0-1000 grid when asked.'
+                    '\n\nScreenshot may show a purple 0-1000 coordinate grid. ' +
+                    'When asked for a point, use that grid. Reply with ONLY JSON when coordinates are requested.'
                 }]
               },
               contents: [{
@@ -616,17 +617,25 @@ const AiraChat = {
     return { error: 'Vision request failed on all keys/models.' };
   },
 
+  /** Gridded screenshot → Gemini → screen pixels */
   async findCoordsByVision(targetLabel) {
-    const shot = await AiraAccess.captureScreen();
+    const shot =
+      typeof AiraAccess.captureScreenWithGrid === 'function'
+        ? await AiraAccess.captureScreenWithGrid()
+        : await AiraAccess.captureScreen();
+
     if (!shot.ok || !shot.base64) {
       return { ok: false, error: shot.error || 'screenshot-fail' };
     }
+
     const prompt =
-      'You see a phone screenshot. Find the UI element: "' + targetLabel + '".\n' +
-      'Return ONLY JSON on one line, no markdown:\n' +
-      '{"x": <0-1000>, "y": <0-1000>}\n' +
-      'Use normalized coordinates: 0,0 top-left, 1000,1000 bottom-right.\n' +
-      'x,y = center of the tappable element. If not found: {"x":-1,"y":-1}';
+      'This phone screenshot has a coordinate GRID from 0 to 1000.\n' +
+      'Origin (0,0) = TOP-LEFT. (1000,1000) = BOTTOM-RIGHT.\n' +
+      'Find the CENTER of this tappable UI element: "' + targetLabel + '".\n' +
+      'Return ONLY one JSON line, no markdown, no extra text:\n' +
+      '{"x": <0-1000 integer>, "y": <0-1000 integer>}\n' +
+      'If not found: {"x":-1,"y":-1}';
+
     const result = await this.callGeminiVision(shot.base64, prompt);
     if (!result.text) {
       return { ok: false, error: result.error || 'vision-fail' };
@@ -642,7 +651,7 @@ const AiraChat = {
     const btn = AiraUI.els.sendBtn;
     btn.disabled = true;
     AiraUI.showTyping();
-    AiraUI.addMessage('Vision se dhundh rahi: ' + targetLabel, false);
+    AiraUI.addMessage('Vision+grid se dhundh rahi: ' + targetLabel, false);
     const found = await this.findCoordsByVision(targetLabel);
     AiraUI.hideTyping();
     if (!found.ok) {
@@ -715,9 +724,11 @@ const AiraChat = {
     const input = AiraUI.els.userInput;
     const btn = AiraUI.els.sendBtn;
 
+    // CURSOR ON
     if (
       cmd === 'cursor on' || cmd === 'cursor on karo' ||
-      cmd === 'cursor dikhao' || cmd === 'show cursor'
+      cmd === 'cursor dikhao' || cmd === 'show cursor' ||
+      cmd.indexOf('कर्सर ऑन') !== -1 || cmd.indexOf('कर्सर ओन') !== -1
     ) {
       input.value = '';
       const r = AiraAccess.showCursor();
@@ -731,6 +742,7 @@ const AiraChat = {
       return true;
     }
 
+    // CURSOR OFF
     if (
       cmd === 'cursor off' || cmd === 'cursor band' ||
       cmd === 'hide cursor' || cmd === 'cursor hide'
@@ -742,23 +754,110 @@ const AiraChat = {
       return true;
     }
 
-    // Vision: cursor to element (move only)
+    // ABSOLUTE edges (NO vision) — before "cursor on top" vision
+    if (
+      cmd === 'cursor top' || cmd === 'cursor on top' ||
+      cmd === 'cursor sabse upar' || cmd === 'sabse upar'
+    ) {
+      input.value = '';
+      if (!AiraAccess.isCursorVisible()) {
+        AiraUI.addMessage('Pehle "cursor on".', false);
+        return true;
+      }
+      const p = AiraAccess.getCursorPosition();
+      AiraAccess.setCursorPosition(p.x, 40);
+      AiraUI.addMessage('Cursor → top', false);
+      return true;
+    }
+    if (
+      cmd === 'cursor bottom' || cmd === 'cursor on bottom' ||
+      cmd === 'cursor sabse niche' || cmd === 'sabse niche'
+    ) {
+      input.value = '';
+      if (!AiraAccess.isCursorVisible()) {
+        AiraUI.addMessage('Pehle "cursor on".', false);
+        return true;
+      }
+      const size = AiraAccess.getScreenSize();
+      const p = AiraAccess.getCursorPosition();
+      AiraAccess.setCursorPosition(p.x, Math.max(40, size.h - 80));
+      AiraUI.addMessage('Cursor → bottom', false);
+      return true;
+    }
+    if (cmd === 'cursor center' || cmd === 'cursor beech' || cmd === 'beech') {
+      input.value = '';
+      if (!AiraAccess.isCursorVisible()) {
+        AiraUI.addMessage('Pehle "cursor on".', false);
+        return true;
+      }
+      const size = AiraAccess.getScreenSize();
+      AiraAccess.setCursorPosition(Math.floor(size.w / 2), Math.floor(size.h / 2));
+      AiraUI.addMessage('Cursor → center', false);
+      return true;
+    }
+
+    // SNAP next tappable (Phase 3)
+    {
+      let dir = null;
+      if (
+        cmd === 'cursor upar' || cmd === 'cursor up' || cmd === 'upar' ||
+        cmd === 'thoda upar' || cmd === 'thoda uper' || cmd.indexOf('ऊपर') !== -1
+      ) dir = 'up';
+      else if (
+        cmd === 'cursor niche' || cmd === 'cursor down' || cmd === 'niche' ||
+        cmd === 'thoda niche' || cmd.indexOf('नीचे') !== -1
+      ) dir = 'down';
+      else if (
+        cmd === 'cursor left' || cmd === 'cursor baye' || cmd === 'baye' ||
+        cmd.indexOf('बाएं') !== -1
+      ) dir = 'left';
+      else if (
+        cmd === 'cursor right' || cmd === 'cursor daye' || cmd === 'daye' ||
+        cmd.indexOf('दाएं') !== -1
+      ) dir = 'right';
+
+      if (dir) {
+        input.value = '';
+        if (!AiraAccess.isCursorVisible()) {
+          AiraUI.addMessage('Pehle "cursor on".', false);
+          return true;
+        }
+        const r = await AiraAccess.snapCursor(dir);
+        if (r.ok) {
+          AiraUI.addMessage('Cursor → ' + dir + ' @(' + r.x + ',' + r.y + ')', false);
+        } else {
+          const step = 120;
+          if (dir === 'up') AiraAccess.moveCursor(0, -step);
+          else if (dir === 'down') AiraAccess.moveCursor(0, step);
+          else if (dir === 'left') AiraAccess.moveCursor(-step, 0);
+          else if (dir === 'right') AiraAccess.moveCursor(step, 0);
+          const p = AiraAccess.getCursorPosition();
+          AiraUI.addMessage('Cursor step ' + dir + ' @(' + p.x + ',' + p.y + ')', false);
+        }
+        return true;
+      }
+    }
+
+    // Vision: cursor to named element (move only)
     {
       let m =
         cmd.match(/^cursor\s+(?:on|to|pe|par)\s+(.+)$/i) ||
         cmd.match(/^cursor\s+(.+?)\s+pe\s*(?:le\s*jao|lejao|jao)?$/i);
       if (m && m[1]) {
-        const target = m[1].trim();
-        if (target && target.length < 60 &&
-            target !== 'on' && target !== 'off' && target !== 'band') {
+        const target = m[1].trim().toLowerCase();
+        if (
+          target && target.length < 60 &&
+          target !== 'on' && target !== 'off' && target !== 'band' &&
+          target !== 'top' && target !== 'bottom' && target !== 'center'
+        ) {
           input.value = '';
-          await this.handleVisionClick(target, true);
+          await this.handleVisionClick(m[1].trim(), true);
           return true;
         }
       }
     }
 
-    // Vision click explicit
+    // Vision click
     if (
       cmd === 'image pe click' || cmd === 'image pe click karo' ||
       cmd === 'image par click' || cmd === 'image par click karo'
@@ -784,7 +883,6 @@ const AiraChat = {
       }
     }
 
-    // Enter / Send via vision
     if (
       cmd === 'enter daba' || cmd === 'enter dabao' || cmd === 'press enter' ||
       cmd === 'send daba' || cmd === 'send dabao' || cmd === 'enter pe click' ||
@@ -947,7 +1045,8 @@ const AiraChat = {
     }
     if (
       cmd.includes('hinglish mein likh') || cmd.includes('hinglish mai likh') ||
-      cmd.includes('hinglish me likh') || cmd.includes('roman mein likh') || cmd === 'hinglish mode'
+      cmd.includes('hinglish me likh') || cmd.includes('roman mein likh') ||
+      cmd === 'hinglish mode' || cmd.indexOf('हिंग्लिश') !== -1
     ) {
       input.value = '';
       this.writeMode = 'hinglish';
@@ -984,7 +1083,7 @@ const AiraChat = {
       return true;
     }
 
-    // Click: a11y first, then vision
+    // Click: a11y first, then gridded vision
     {
       let clickTarget = null;
       const c = cmd.trim();
